@@ -187,7 +187,8 @@ export default function FarmManagement() {
           </div>
 
           {/* Interactive Stepper */}
-          <div className="grid grid-cols-4 gap-2 text-center py-4 relative">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center py-4 relative">
+
             <div className="space-y-2">
               <div className="w-10 h-10 rounded-full bg-[#006c49] text-white flex items-center justify-center mx-auto text-xs font-bold shadow-sm">
                 <Check className="w-5 h-5" />

@@ -21,6 +21,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -32,6 +33,7 @@ export default function App() {
     setIsLoggedIn(false);
     setUser(null);
     setActiveTab('home');
+    setIsMobileMenuOpen(false);
   };
 
   const handleTabChange = (tabId) => {
@@ -40,7 +42,9 @@ export default function App() {
       return;
     }
     setActiveTab(tabId);
+    setIsMobileMenuOpen(false);
   };
+
 
   const renderActivePage = () => {
     if (!isLoggedIn || activeTab === 'home') {
@@ -114,6 +118,8 @@ export default function App() {
           user={user}
           onOpenAuth={() => setIsAuthModalOpen(true)}
           onLogout={handleLogout}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
       )}
 
@@ -126,11 +132,14 @@ export default function App() {
           user={user}
           onOpenAuth={() => setIsAuthModalOpen(true)}
           onLogout={handleLogout}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
 
-        <main className="w-full flex-1 transition-all duration-300">
+        <main className={`w-full flex-1 transition-all duration-300 ${isLoggedIn ? 'pb-20 lg:pb-0' : ''}`}>
           {renderActivePage()}
         </main>
+
 
         {/* Footer Banner rendered ONLY on the Landing Page */}
         {(!isLoggedIn || activeTab === 'home') && (

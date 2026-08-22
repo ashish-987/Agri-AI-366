@@ -31,8 +31,9 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <div className="rounded-3xl p-6 sm:p-8 max-w-md w-full border border-emerald-200 shadow-2xl space-y-6 bg-white relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
+      <div className="rounded-3xl p-5 sm:p-8 max-w-md w-[92%] sm:w-full max-h-[90vh] overflow-y-auto no-scrollbar border border-emerald-200 shadow-2xl space-y-5 sm:space-y-6 bg-white relative">
+
         
         {/* Close Button */}
         <button

@@ -124,24 +124,24 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
           </div>
 
           {/* Heading */}
-          <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-[#002117] leading-[1.12] tracking-tight">
+          <h1 className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-[#002117] leading-[1.12] tracking-tight">
             Smart Farming. <br />
             <span className="text-[#38bdf8]">Better Decisions.</span> <br />
             Higher Yield.
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm sm:text-base text-[#3c4a42] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
+          <p className="text-xs sm:text-base text-[#3c4a42] font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
             The all-in-one AI ecosystem for modern agriculture. Connect with experts, detect diseases, and lease equipment with ease.
           </p>
 
           {/* Dual Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2 w-full">
             {!isLoggedIn ? (
               <>
                 <button
                   onClick={onOpenAuth}
-                  className="px-7 py-3.5 rounded-xl bg-[#006c49] text-white text-sm font-extrabold shadow-md hover:bg-[#046a38] hover:scale-105 transition-all flex items-center gap-2 uppercase tracking-wider"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#006c49] text-white text-xs sm:text-sm font-extrabold shadow-md hover:bg-[#046a38] hover:scale-105 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
                 >
                   <span>GET STARTED</span>
                   <ArrowRight className="w-4 h-4" />
@@ -149,7 +149,7 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
 
                 <button
                   onClick={onGoogleLogin}
-                  className="px-7 py-3.5 rounded-xl bg-[#bbf7d0] text-[#006c49] text-sm font-extrabold hover:bg-[#86efac] transition-all flex items-center gap-2 uppercase tracking-wider"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#bbf7d0] text-[#006c49] text-xs sm:text-sm font-extrabold hover:bg-[#86efac] transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
                 >
                   <Play className="w-4 h-4 fill-[#006c49]" />
                   <span>WATCH DEMO</span>
@@ -158,13 +158,14 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
             ) : (
               <button
                 onClick={() => setActiveTab('marketplace')}
-                className="px-7 py-3.5 rounded-xl bg-[#006c49] text-white text-sm font-extrabold shadow-md hover:bg-[#046a38] hover:scale-105 transition-all flex items-center gap-2 uppercase tracking-wider"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#006c49] text-white text-xs sm:text-sm font-extrabold shadow-md hover:bg-[#046a38] hover:scale-105 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
               >
                 <span>GO TO MARKETPLACE</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
           </div>
+
 
           {/* Proof Badges & Yield Increase Card */}
           <div className="pt-6 flex flex-wrap items-center justify-center lg:justify-start gap-6">

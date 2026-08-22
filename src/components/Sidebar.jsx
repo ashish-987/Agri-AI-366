@@ -14,10 +14,11 @@ import {
   ChevronDown, 
   LogIn, 
   UserCheck, 
-  Lock 
+  Lock,
+  X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onOpenAuth, onLogout }) {
+export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onOpenAuth, onLogout, isMobileMenuOpen, setIsMobileMenuOpen }) {
   const [langOpen, setLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState('English');
 
@@ -35,16 +36,19 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
 
   const languages = ['English', 'हिंदी (Hindi)', 'ਪੰਜਾਬੀ (Punjabi)', 'मराठी (Marathi)', 'తెలుగు (Telugu)'];
 
-  return (
-    <aside className="w-64 sm:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex flex-col justify-between transition-all bg-white border-r border-emerald-100/80 shadow-sm">
-      <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar pr-1">
-        
-        {/* Brand Logo & Modules List */}
-        <div className="space-y-6">
-          {/* Logo */}
+  const sidebarContent = (
+    <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar pr-1">
+      
+      {/* Brand Logo & Modules List */}
+      <div className="space-y-6">
+        {/* Logo & Mobile Close */}
+        <div className="flex items-center justify-between px-2 pt-2">
           <button 
-            onClick={() => setActiveTab('home')} 
-            className="flex items-center gap-3 text-left focus:outline-none group px-2 pt-2"
+            onClick={() => {
+              setActiveTab('home');
+              if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+            }} 
+            className="flex items-center gap-3 text-left focus:outline-none group"
           >
             <div className="w-10 h-10 rounded-xl bg-[#006c49] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform flex-none">
               <Sprout className="w-6 h-6" />
@@ -56,126 +60,174 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
             </div>
           </button>
 
-          {/* Navigation Items Vertical List */}
-          <nav className="space-y-1.5 pt-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              const isLocked = !isLoggedIn && item.id !== 'home';
+          {/* Close button for mobile drawer */}
+          {setIsMobileMenuOpen && (
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
 
-              return (
+        {/* Navigation Items Vertical List */}
+        <nav className="space-y-1.5 pt-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const isLocked = !isLoggedIn && item.id !== 'home';
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-extrabold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
+                    : 'text-[#065f46] hover:bg-emerald-50/80 hover:text-[#006c49]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : 'text-[#006c49]'}`} />
+                  <span>{item.label}</span>
+                </div>
+
+                {item.badge && (
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#006c49]'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+
+                {isLocked && (
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Bottom User Card / Controls */}
+      <div className="pt-4 space-y-3">
+        
+        {/* Language Switcher */}
+        <div className="relative">
+          <button
+            onClick={() => setLangOpen(!langOpen)}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-[#f8fafc] text-[#006c49] hover:bg-white border border-emerald-200/80 shadow-sm transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-[#006c49]" />
+              <span>{currentLang}</span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-[#065f46]" />
+          </button>
+
+          {langOpen && (
+            <div className="absolute bottom-12 left-0 w-full bg-white rounded-2xl shadow-xl border border-[#006c49]/20 py-2 z-50 animate-in fade-in">
+              {languages.map((lang) => (
                 <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-extrabold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
-                      : 'text-[#065f46] hover:bg-emerald-50/80 hover:text-[#006c49]'
+                  key={lang}
+                  onClick={() => {
+                    setCurrentLang(lang);
+                    setLangOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-[#dcfce7] hover:text-[#006c49] transition-colors ${
+                    currentLang === lang ? 'text-[#006c49] bg-[#dcfce7]' : 'text-[#065f46]'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : 'text-[#006c49]'}`} />
-                    <span>{item.label}</span>
-                  </div>
-
-                  {item.badge && (
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#006c49]'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
-
-                  {isLocked && (
-                    <Lock className="w-3.5 h-3.5 text-amber-600" />
-                  )}
+                  {lang}
                 </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Bottom User Card / Controls */}
-        <div className="pt-4 space-y-3">
-          
-          {/* Language Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setLangOpen(!langOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-[#f8fafc] text-[#006c49] hover:bg-white border border-emerald-200/80 shadow-sm transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#006c49]" />
-                <span>{currentLang}</span>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-[#065f46]" />
-            </button>
-
-            {langOpen && (
-              <div className="absolute bottom-12 left-0 w-full bg-white rounded-2xl shadow-xl border border-[#006c49]/20 py-2 z-50 animate-in fade-in">
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => {
-                      setCurrentLang(lang);
-                      setLangOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-[#dcfce7] hover:text-[#006c49] transition-colors ${
-                      currentLang === lang ? 'text-[#006c49] bg-[#dcfce7]' : 'text-[#065f46]'
-                    }`}
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* User Profile Card */}
-          {!isLoggedIn ? (
-            <button
-              onClick={onOpenAuth}
-              className="w-full py-3 rounded-2xl bg-[#006c49] text-white text-xs font-bold shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-2"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Login / Register</span>
-            </button>
-          ) : (
-            <div className="p-3 rounded-2xl bg-white/90 border border-[#006c49]/20 flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/assets/agri_expert_portrait.jpg"
-                  alt="Farmer Avatar"
-                  className="w-9 h-9 rounded-full object-cover border-2 border-[#006c49]"
-                />
-                <div className="max-w-[100px] truncate">
-                  <p className="font-bold text-xs text-[#006c49] truncate">{user?.name || 'Farmer Singh'}</p>
-                  <p className="text-[9px] font-bold text-[#0284c7] uppercase">Premium Plan</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className="p-1.5 rounded-xl hover:bg-[#dcfce7] text-[#006c49]"
-                  title="Settings"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={onLogout}
-                  className="p-1.5 rounded-xl hover:bg-red-50 text-red-600"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+              ))}
             </div>
           )}
-
         </div>
 
+        {/* User Profile Card */}
+        {!isLoggedIn ? (
+          <button
+            onClick={() => {
+              onOpenAuth();
+              if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+            }}
+            className="w-full py-3 rounded-2xl bg-[#006c49] text-white text-xs font-bold shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-2"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Login / Register</span>
+          </button>
+        ) : (
+          <div className="p-3 rounded-2xl bg-white/90 border border-[#006c49]/20 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/agri_expert_portrait.jpg"
+                alt="Farmer Avatar"
+                className="w-9 h-9 rounded-full object-cover border-2 border-[#006c49]"
+              />
+              <div className="max-w-[100px] truncate">
+                <p className="font-bold text-xs text-[#006c49] truncate">{user?.name || 'Farmer Singh'}</p>
+                <p className="text-[9px] font-bold text-[#0284c7] uppercase">Premium Plan</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setActiveTab('settings');
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className="p-1.5 rounded-xl hover:bg-[#dcfce7] text-[#006c49]"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  onLogout();
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className="p-1.5 rounded-xl hover:bg-red-50 text-red-600"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
-    </aside>
+
+    </div>
+  );
+
+  return (
+    <>
+      {/* DESKTOP PERMANENT SIDEBAR */}
+      <aside className="hidden lg:flex w-64 xl:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex-col justify-between transition-all bg-white border-r border-emerald-100/80 shadow-sm">
+        {sidebarContent}
+      </aside>
+
+      {/* MOBILE SLIDE-OVER DRAWER OVERLAY */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+          />
+
+          {/* Drawer Container */}
+          <div className="relative w-80 max-w-[85vw] bg-white h-full p-4 shadow-2xl z-10 flex flex-col animate-in slide-in-from-left duration-300">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
+
