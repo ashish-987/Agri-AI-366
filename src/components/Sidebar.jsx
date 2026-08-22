@@ -36,7 +36,7 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
   const languages = ['English', 'हिंदी (Hindi)', 'ਪੰਜਾਬੀ (Punjabi)', 'मराठी (Marathi)', 'తెలుగు (Telugu)'];
 
   return (
-    <aside className="w-64 sm:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex flex-col justify-between transition-all bg-[#dcfce7]/60">
+    <aside className="w-64 sm:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex flex-col justify-between transition-all bg-white border-r border-emerald-100/80 shadow-sm">
       <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar pr-1">
         
         {/* Brand Logo & Modules List */}
@@ -67,10 +67,10 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-extrabold transition-all duration-200 ${
                     isActive
-                      ? 'bg-[#006c49] text-white shadow-md'
-                      : 'text-[#065f46] hover:bg-[#006c49]/10 hover:text-[#006c49]'
+                      ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
+                      : 'text-[#065f46] hover:bg-emerald-50/80 hover:text-[#006c49]'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -80,7 +80,7 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
 
                   {item.badge && (
                     <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-[#006c49]/15 text-[#006c49]'
+                      isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#006c49]'
                     }`}>
                       {item.badge}
                     </span>
@@ -102,7 +102,7 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
           <div className="relative">
             <button
               onClick={() => setLangOpen(!langOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/80 text-[#006c49] hover:bg-white border border-[#006c49]/15 shadow-sm transition-all"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-[#f8fafc] text-[#006c49] hover:bg-white border border-emerald-200/80 shadow-sm transition-all"
             >
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#006c49]" />

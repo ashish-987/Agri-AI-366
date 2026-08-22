@@ -98,22 +98,24 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex overflow-x-hidden selection:bg-[#10b981] selection:text-white bg-[#e7fff3]">
+    <div className="relative min-h-screen w-full flex overflow-x-hidden selection:bg-[#10b981] selection:text-white bg-[#f8fafc]">
       
       {/* Background Animated GLSL WebGL Shader */}
-      <div className="fixed inset-0 z-0 opacity-40 pointer-events-none w-full h-full">
+      <div className="fixed inset-0 z-0 opacity-15 pointer-events-none w-full h-full">
         <WebGLShaderCanvas className="w-full h-full" />
       </div>
 
-      {/* LEFT SIDEBAR NAVIGATION */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        isLoggedIn={isLoggedIn}
-        user={user}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onLogout={handleLogout}
-      />
+      {/* LEFT SIDEBAR NAVIGATION (Visible after user logs in) */}
+      {isLoggedIn && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onLogout={handleLogout}
+        />
+      )}
 
       {/* RIGHT MAIN CONTENT CONTAINER */}
       <div className="relative z-10 flex-1 flex flex-col justify-between min-w-0 min-h-screen">
@@ -126,7 +128,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main className="w-full px-4 sm:px-8 py-2 flex-1 transition-all duration-300">
+        <main className="w-full flex-1 transition-all duration-300">
           {renderActivePage()}
         </main>
 

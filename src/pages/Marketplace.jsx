@@ -24,12 +24,20 @@ import {
   Bell,
   Mail,
   Award,
-  Calculator
+  Calculator,
+  AlertCircle
 } from 'lucide-react';
 
 export default function Marketplace() {
-  const [activeMarketTab, setActiveMarketTab] = useState('snapshot');
+  const [activeMarketTab, setActiveMarketTab] = useState('explorer');
   
+  // Market Explorer Filters State
+  const [selectedState, setSelectedState] = useState('All States');
+  const [selectedDistrict, setSelectedDistrict] = useState('All Districts');
+  const [selectedCrop, setSelectedCrop] = useState('All Crops');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [alertSuccess, setAlertSuccess] = useState('');
+
   // Best Market Calculator State
   const [commodity, setCommodity] = useState('Tomato (Hybrid)');
   const [quantity, setQuantity] = useState('50');
@@ -50,21 +58,190 @@ export default function Marketplace() {
   const [roiAcreage, setRoiAcreage] = useState(10);
   const [roiCrop, setRoiCrop] = useState('Wheat (PB-1)');
 
+  // List Produce Modal State
+  const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [newProduce, setNewProduce] = useState({
+    cropName: 'Tomato (Hybrid)',
+    quantity: '100',
+    askingPrice: '2450',
+    harvestDate: '2026-08-25',
+    location: 'Lucknow, UP'
+  });
+  const [userListings, setUserListings] = useState([]);
+  const [listingSuccess, setListingSuccess] = useState('');
+
+  // Contact Buyer Modal State
+  const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [contactMessageSent, setContactMessageSent] = useState(false);
+
+  // Recalculate Best Market
   const handleRecalculate = (e) => {
     e.preventDefault();
-    alert("Recalculating AI market transport & price trajectory...");
+    const qtyNum = Number(quantity) || 50;
+    let basePrice = 2450;
+    if (commodity.includes('Wheat')) basePrice = 2250;
+    if (commodity.includes('Soybean')) basePrice = 4850;
+
+    const gross = qtyNum * basePrice;
+    const trans = Math.round(qtyNum * 120);
+    const net = gross - trans;
+
+    setCalcResult({
+      bestMandi: `${selectedState !== 'All States' ? selectedState : 'Lucknow Regional'} Mandi`,
+      score: Math.floor(Math.random() * 8) + 91,
+      distance: '42 km away',
+      transportTime: '1.1 hrs transport',
+      expectedPrice: `₹${basePrice.toLocaleString('en-IN')} / qtl`,
+      grossRevenue: `₹${gross.toLocaleString('en-IN')}`,
+      transportCost: `-₹${trans.toLocaleString('en-IN')}`,
+      netRevenue: `₹${net.toLocaleString('en-IN')}`
+    });
+  };
+
+  // Mock Live Mandi Explorer Data across 366 Districts
+  const mandiExplorerData = [
+    {
+      id: 1,
+      mandiName: 'Lucknow Central Mandi',
+      district: 'Lucknow',
+      state: 'Uttar Pradesh',
+      crop: 'Tomato (Hybrid)',
+      minPrice: 2200,
+      maxPrice: 2600,
+      modalPrice: 2450,
+      arrivals: '4,850 Quintals',
+      trend: '+4.2%',
+      trendType: 'up',
+      aiAdvice: 'SELL TODAY',
+      adviceBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      lastUpdated: '10 mins ago'
+    },
+    {
+      id: 2,
+      mandiName: 'Azadpur APMC Mandi',
+      district: 'North Delhi',
+      state: 'Delhi',
+      crop: 'Tomato (Hybrid)',
+      minPrice: 2400,
+      maxPrice: 2850,
+      modalPrice: 2680,
+      arrivals: '12,400 Quintals',
+      trend: '+6.8%',
+      trendType: 'up',
+      aiAdvice: 'HIGHEST PRICE',
+      adviceBg: 'bg-blue-100 text-blue-800 border-blue-300',
+      lastUpdated: '5 mins ago'
+    },
+    {
+      id: 3,
+      mandiName: 'Kanpur Grain Mandi',
+      district: 'Kanpur Nagar',
+      state: 'Uttar Pradesh',
+      crop: 'Sharbati Wheat',
+      minPrice: 2150,
+      maxPrice: 2380,
+      modalPrice: 2310,
+      arrivals: '8,200 Quintals',
+      trend: '+2.1%',
+      trendType: 'up',
+      aiAdvice: 'HOLD 3 DAYS',
+      adviceBg: 'bg-amber-100 text-amber-800 border-amber-300',
+      lastUpdated: '15 mins ago'
+    },
+    {
+      id: 4,
+      mandiName: 'Nashik APMC Market',
+      district: 'Nashik',
+      state: 'Maharashtra',
+      crop: 'Red Onion (Grade A)',
+      minPrice: 1800,
+      maxPrice: 2100,
+      modalPrice: 1980,
+      arrivals: '15,600 Quintals',
+      trend: '-1.2%',
+      trendType: 'down',
+      aiAdvice: 'STABLE DEMAND',
+      adviceBg: 'bg-gray-100 text-gray-800 border-gray-300',
+      lastUpdated: '22 mins ago'
+    },
+    {
+      id: 5,
+      mandiName: 'Ludhiana Grain Hub',
+      district: 'Ludhiana',
+      state: 'Punjab',
+      crop: 'Sharbati Wheat',
+      minPrice: 2280,
+      maxPrice: 2520,
+      modalPrice: 2420,
+      arrivals: '9,100 Quintals',
+      trend: '+3.5%',
+      trendType: 'up',
+      aiAdvice: 'SELL TODAY',
+      adviceBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      lastUpdated: '8 mins ago'
+    },
+    {
+      id: 6,
+      mandiName: 'Indore APMC Yard',
+      district: 'Indore',
+      state: 'Madhya Pradesh',
+      crop: 'Yellow Soybean',
+      minPrice: 4600,
+      maxPrice: 5100,
+      modalPrice: 4890,
+      arrivals: '6,400 Quintals',
+      trend: '-1.1%',
+      trendType: 'down',
+      aiAdvice: 'HOLD FOR RALLY',
+      adviceBg: 'bg-purple-100 text-purple-800 border-purple-300',
+      lastUpdated: '12 mins ago'
+    }
+  ];
+
+  // Filtered Mandi List
+  const filteredMandis = mandiExplorerData.filter((mandi) => {
+    const matchState = selectedState === 'All States' || mandi.state === selectedState;
+    const matchDistrict = selectedDistrict === 'All Districts' || mandi.district === selectedDistrict;
+    const matchCrop = selectedCrop === 'All Crops' || mandi.crop.toLowerCase().includes(selectedCrop.toLowerCase().split(' ')[0]);
+    const matchSearch = searchQuery === '' || 
+      mandi.mandiName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mandi.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mandi.crop.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchState && matchDistrict && matchCrop && matchSearch;
+  });
+
+  const handleSetAlert = (mandiName) => {
+    setAlertSuccess(`🔔 AI Price Alert activated for ${mandiName}! You will receive SMS & WhatsApp notifications when prices fluctuate.`);
+    setTimeout(() => setAlertSuccess(''), 5000);
+  };
+
+  const handleAddProduceSubmit = (e) => {
+    e.preventDefault();
+    setUserListings([
+      ...userListings,
+      {
+        id: Date.now(),
+        ...newProduce,
+        status: 'ACTIVE'
+      }
+    ]);
+    setListingSuccess('✅ Crop produce successfully listed on AI Mandi Marketplace! Verified corporate buyers have been notified.');
+    setIsListModalOpen(false);
+    setTimeout(() => setListingSuccess(''), 6000);
   };
 
   const buyersList = [
     {
       id: 1,
-      name: 'ABC Foods & Agros',
+      name: 'ABC Foods & Agros India',
       type: 'PROCESSOR',
       verified: true,
       distance: '45 km away',
       requiredCrop: 'Tomato (Hybrid)',
       targetPrice: '₹2,480 / qtl',
       neededQty: '15,000 Quintals',
+      contactPhone: '+91 98765 43210',
+      email: 'procurement@abcfoods.in',
       img: '/assets/fresh_mandi_produce.jpg'
     },
     {
@@ -76,6 +253,8 @@ export default function Marketplace() {
       requiredCrop: 'Beefsteak & Sharbati Wheat',
       targetPrice: '₹3,200 / qtl',
       neededQty: '5,000 Quintals',
+      contactPhone: '+91 98111 22233',
+      email: 'export@zgreenagros.com',
       img: '/assets/fresh_mandi_produce.jpg'
     },
     {
@@ -87,15 +266,32 @@ export default function Marketplace() {
       requiredCrop: 'Organic Pulses & Tomato',
       targetPrice: '₹3,820 / qtl',
       neededQty: '50,000 Quintals',
+      contactPhone: '+91 99887 76655',
+      email: 'buyer@nationalgrocers.in',
       img: '/assets/fresh_mandi_produce.jpg'
     }
   ];
 
   return (
-    <div className="space-y-8 py-2 w-full">
+    <div className="space-y-8 py-2 w-full px-4 sm:px-6">
       
+      {/* Toast Notification */}
+      {alertSuccess && (
+        <div className="p-4 rounded-2xl bg-[#00422b] text-white font-bold text-xs flex items-center justify-between shadow-xl animate-in fade-in">
+          <span>{alertSuccess}</span>
+          <button onClick={() => setAlertSuccess('')} className="p-1 text-emerald-300 hover:text-white">✕</button>
+        </div>
+      )}
+
+      {listingSuccess && (
+        <div className="p-4 rounded-2xl bg-[#006c49] text-white font-bold text-xs flex items-center justify-between shadow-xl animate-in fade-in">
+          <span>{listingSuccess}</span>
+          <button onClick={() => setListingSuccess('')} className="p-1 text-emerald-200 hover:text-white">✕</button>
+        </div>
+      )}
+
       {/* SUB-NAVIGATION TAB STRIP */}
-      <div className="flex items-center gap-2 border-b border-[#006c49]/15 pb-3 overflow-x-auto no-scrollbar">
+      <div className="p-2 rounded-3xl bg-white border border-emerald-100 shadow-sm flex items-center gap-2 overflow-x-auto no-scrollbar">
         {[
           { id: 'snapshot', label: 'Market Snapshot', icon: BarChart3 },
           { id: 'bestMarket', label: 'Best Market Optimizer', icon: Sparkles },
@@ -109,13 +305,13 @@ export default function Marketplace() {
             <button
               key={tab.id}
               onClick={() => setActiveMarketTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-[#006c49] text-white shadow-md'
-                  : 'bg-white text-[#00422b] hover:bg-[#dcfce7] border border-[#006c49]/15'
+                  ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
+                  : 'bg-emerald-50/60 text-[#00422b] hover:bg-emerald-100/80 border border-emerald-100'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-300' : 'text-[#006c49]'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -124,7 +320,7 @@ export default function Marketplace() {
 
       {/* TAB 1: MARKET SNAPSHOT */}
       {activeMarketTab === 'snapshot' && (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in">
           
           <div className="space-y-1">
             <h1 className="font-display font-black text-3xl sm:text-4xl text-[#002117]">Market Snapshot</h1>
@@ -200,7 +396,7 @@ export default function Marketplace() {
               </div>
 
               <div>
-                <h3 className="font-display font-black text-3xl text-white">18 <span className="text-xs font-normal">Available</span></h3>
+                <h3 className="font-display font-black text-3xl text-white">366 <span className="text-xs font-normal">Districts Synced</span></h3>
                 <p className="text-[11px] text-[#bbcabf] font-medium">Updating in real-time from state APMC feeds.</p>
               </div>
             </div>
@@ -211,18 +407,18 @@ export default function Marketplace() {
             
             <div className="lg:col-span-4 space-y-6">
               <div className="rounded-3xl p-6 bg-white border border-[#006c49]/15 shadow-sm space-y-3">
-                <h3 className="font-display font-bold text-xs text-[#002117]">Recent Searches</h3>
+                <h3 className="font-display font-bold text-xs text-[#002117]">Popular Commodity Tags</h3>
                 <div className="flex flex-wrap gap-2 text-xs font-bold text-[#006c49]">
-                  <span className="px-3 py-1.5 rounded-xl bg-[#dcfce7]">🍅 Tomato - UP</span>
-                  <span className="px-3 py-1.5 rounded-xl bg-[#dcfce7]">🧅 Onion - Nashik</span>
-                  <span className="px-3 py-1.5 rounded-xl bg-[#dcfce7]">🥔 Potato</span>
+                  <button onClick={() => { setSelectedCrop('Tomato (Hybrid)'); setActiveMarketTab('explorer'); }} className="px-3 py-1.5 rounded-xl bg-[#dcfce7] hover:bg-[#006c49] hover:text-white transition-all">🍅 Tomato - UP</button>
+                  <button onClick={() => { setSelectedCrop('Sharbati Wheat'); setActiveMarketTab('explorer'); }} className="px-3 py-1.5 rounded-xl bg-[#dcfce7] hover:bg-[#006c49] hover:text-white transition-all">🌾 Wheat - Punjab</button>
+                  <button onClick={() => { setSelectedCrop('Red Onion'); setActiveMarketTab('explorer'); }} className="px-3 py-1.5 rounded-xl bg-[#dcfce7] hover:bg-[#006c49] hover:text-white transition-all">🧅 Onion - Nashik</button>
                 </div>
               </div>
 
               <div className="rounded-3xl p-6 bg-white border border-[#006c49]/15 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display font-bold text-xs text-[#002117]">Saved Markets</h3>
-                  <button className="text-[10px] font-bold text-[#006c49] uppercase">View All</button>
+                  <h3 className="font-display font-bold text-xs text-[#002117]">Saved Regional Mandis</h3>
+                  <button onClick={() => setActiveMarketTab('explorer')} className="text-[10px] font-bold text-[#006c49] uppercase hover:underline">View All</button>
                 </div>
 
                 <div className="space-y-3">
@@ -230,11 +426,11 @@ export default function Marketplace() {
                     <div className="flex items-center gap-3">
                       <MapPin className="w-4 h-4 text-[#006c49]" />
                       <div>
-                        <p className="font-bold text-[#002117]">Lucknow Mandi</p>
-                        <p className="text-[10px] text-[#6c7a71]">Uttar Pradesh</p>
+                        <p className="font-bold text-[#002117]">Lucknow Central Mandi</p>
+                        <p className="text-[10px] text-[#6c7a71]">Uttar Pradesh APMC</p>
                       </div>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-[#006c49]" />
+                    <button onClick={() => setActiveMarketTab('explorer')}><ArrowUpRight className="w-4 h-4 text-[#006c49]" /></button>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-[#dcfce7]/40 flex items-center justify-between text-xs">
@@ -242,10 +438,10 @@ export default function Marketplace() {
                       <MapPin className="w-4 h-4 text-[#006c49]" />
                       <div>
                         <p className="font-bold text-[#002117]">Azadpur Mandi</p>
-                        <p className="text-[10px] text-[#6c7a71]">Delhi APMC</p>
+                        <p className="text-[10px] text-[#6c7a71]">North Delhi APMC</p>
                       </div>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-[#006c49]" />
+                    <button onClick={() => setActiveMarketTab('explorer')}><ArrowUpRight className="w-4 h-4 text-[#006c49]" /></button>
                   </div>
                 </div>
               </div>
@@ -253,7 +449,7 @@ export default function Marketplace() {
 
             <div className="lg:col-span-8 rounded-3xl p-7 bg-white border border-[#006c49]/15 shadow-sm space-y-6">
               <div>
-                <h2 className="font-display font-extrabold text-2xl text-[#002117]">Recommended Markets</h2>
+                <h2 className="font-display font-extrabold text-2xl text-[#002117]">Recommended Regional Mandis</h2>
                 <p className="text-xs text-[#6c7a71] font-medium">AI-driven recommendations based on current location and logistics overhead.</p>
               </div>
 
@@ -274,14 +470,14 @@ export default function Marketplace() {
                       <td className="py-4 px-2 text-[#6c7a71]">45 km</td>
                       <td className="py-4 px-2 font-bold text-[#006c49]">₹2,450</td>
                       <td className="py-4 px-2"><span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">High Margin</span></td>
-                      <td className="py-4 px-2 text-right"><button className="px-3 py-1.5 rounded-xl bg-[#006c49] text-white text-[11px] font-bold">View Mandi</button></td>
+                      <td className="py-4 px-2 text-right"><button onClick={() => setActiveMarketTab('explorer')} className="px-3 py-1.5 rounded-xl bg-[#006c49] text-white text-[11px] font-bold">Explore Mandi</button></td>
                     </tr>
                     <tr>
                       <td className="py-4 px-2 font-bold">Kanpur Nagar (UP)</td>
                       <td className="py-4 px-2 text-[#6c7a71]">82 km</td>
                       <td className="py-4 px-2 font-bold text-[#0284c7]">₹2,310</td>
                       <td className="py-4 px-2"><span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full">Med Margin</span></td>
-                      <td className="py-4 px-2 text-right"><button className="px-3 py-1.5 rounded-xl bg-[#006c49] text-white text-[11px] font-bold">View Mandi</button></td>
+                      <td className="py-4 px-2 text-right"><button onClick={() => setActiveMarketTab('explorer')} className="px-3 py-1.5 rounded-xl bg-[#006c49] text-white text-[11px] font-bold">Explore Mandi</button></td>
                     </tr>
                   </tbody>
                 </table>
@@ -295,7 +491,7 @@ export default function Marketplace() {
 
       {/* TAB 2: BEST MARKET OPTIMIZER */}
       {activeMarketTab === 'bestMarket' && (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <h1 className="font-display font-black text-3xl sm:text-4xl text-[#002117]">Find My Best Market</h1>
@@ -355,7 +551,7 @@ export default function Marketplace() {
                   className="w-full py-3.5 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold uppercase tracking-wider shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  <span>RECALCULATE</span>
+                  <span>RECALCULATE OPTIMAL MANDI</span>
                 </button>
               </form>
             </div>
@@ -365,7 +561,7 @@ export default function Marketplace() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
-                      🏆 TOP RECOMMENDATION
+                      🏆 TOP AI MANDI RECOMMENDATION
                     </span>
                     <h2 className="font-display font-black text-3xl text-[#002117]">{calcResult.bestMandi}</h2>
                     <p className="text-xs text-[#6c7a71] font-semibold">{calcResult.distance} • {calcResult.transportTime}</p>
@@ -401,9 +597,313 @@ export default function Marketplace() {
         </div>
       )}
 
+      {/* TAB 3: MARKET PRICE EXPLORER (FULLY IMPLEMENTED & INTERACTIVE) */}
+      {activeMarketTab === 'explorer' && (
+        <div className="space-y-8 animate-in fade-in">
+          
+          {/* Header */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006c49]/15 text-[#006c49] text-[11px] font-extrabold uppercase">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>366 DISTRICT MANDI NETWORK</span>
+              </div>
+              <h1 className="font-display font-black text-3xl sm:text-4xl text-[#002117]">
+                Market Price Explorer
+              </h1>
+              <p className="text-xs sm:text-sm text-[#3c4a42] font-medium">
+                Live mandi rates, arrival volumes, and 14-day AI price trajectory forecasts across 366 districts in India.
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setIsListModalOpen(true)}
+              className="px-6 py-3.5 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold shadow-md hover:bg-[#046a38] transition-all flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>SELL PRODUCE AT TOP MANDI PRICE</span>
+            </button>
+          </div>
+
+          {/* INTERACTIVE FILTERS STRIP */}
+          <div className="p-6 rounded-3xl bg-white border border-[#006c49]/20 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold uppercase text-[#006c49] flex items-center gap-2">
+                <Filter className="w-4 h-4" /> Filter APMC Mandis by Region & Crop
+              </span>
+              <button 
+                onClick={() => {
+                  setSelectedState('All States');
+                  setSelectedDistrict('All Districts');
+                  setSelectedCrop('All Crops');
+                  setSearchQuery('');
+                }}
+                className="text-[11px] font-bold text-red-600 hover:underline"
+              >
+                Reset Filters
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-bold text-[#00422b]">
+              <div>
+                <label className="block text-[10px] text-[#6c7a71] uppercase mb-1">SELECT STATE</label>
+                <select 
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117] focus:outline-none focus:ring-2 focus:ring-[#006c49]"
+                >
+                  <option>All States</option>
+                  <option>Uttar Pradesh</option>
+                  <option>Delhi</option>
+                  <option>Punjab</option>
+                  <option>Maharashtra</option>
+                  <option>Madhya Pradesh</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-[#6c7a71] uppercase mb-1">SELECT DISTRICT</label>
+                <select 
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117] focus:outline-none focus:ring-2 focus:ring-[#006c49]"
+                >
+                  <option>All Districts</option>
+                  <option>Lucknow</option>
+                  <option>Kanpur Nagar</option>
+                  <option>North Delhi</option>
+                  <option>Ludhiana</option>
+                  <option>Nashik</option>
+                  <option>Indore</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-[#6c7a71] uppercase mb-1">SELECT CROP</label>
+                <select 
+                  value={selectedCrop}
+                  onChange={(e) => setSelectedCrop(e.target.value)}
+                  className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117] focus:outline-none focus:ring-2 focus:ring-[#006c49]"
+                >
+                  <option>All Crops</option>
+                  <option>Tomato (Hybrid)</option>
+                  <option>Sharbati Wheat</option>
+                  <option>Red Onion (Grade A)</option>
+                  <option>Yellow Soybean</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-[#6c7a71] uppercase mb-1">SEARCH MANDI NAME</label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#006c49]/60 absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    placeholder="Search mandi..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117] placeholder-[#6c7a71] focus:outline-none focus:ring-2 focus:ring-[#006c49]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI PRICE FORECAST TRAJECTORY CARD */}
+          <div className="p-7 rounded-3xl bg-[#002117] text-white border border-[#10b981]/30 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#10b981]/20 text-[#6ffbbe] text-[10px] font-extrabold uppercase">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>94.2% AI ACCURACY MODEL</span>
+                </div>
+                <h3 className="font-display font-black text-2xl text-white">
+                  14-Day AI Mandi Price Trajectory Forecast
+                </h3>
+                <p className="text-xs text-[#bbcabf]">
+                  Predictive machine-learning trend based on historical arrivals, weather radar, and regional processor demand.
+                </p>
+              </div>
+
+              <div className="px-5 py-3 rounded-2xl bg-white/10 border border-white/20 text-center flex-none">
+                <p className="text-[10px] text-[#bbcabf] font-bold uppercase">PREDICTED PEAK PRICE</p>
+                <p className="font-display font-black text-2xl text-[#6ffbbe]">₹2,680 / qtl</p>
+                <p className="text-[9px] text-emerald-400 font-bold">Expected in 6 Days (+9.4%)</p>
+              </div>
+            </div>
+
+            {/* Price Timeline Visualization */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
+              {[
+                { day: 'Today', price: '₹2,450', change: 'Current', color: 'bg-emerald-500/20 border-emerald-400 text-emerald-300' },
+                { day: 'Day 2', price: '₹2,490', change: '+1.6%', color: 'bg-emerald-500/20 border-emerald-400 text-emerald-300' },
+                { day: 'Day 4', price: '₹2,560', change: '+4.4%', color: 'bg-emerald-500/20 border-emerald-400 text-emerald-300' },
+                { day: 'Day 6 (PEAK)', price: '₹2,680', change: '+9.4%', color: 'bg-[#10b981] border-white text-white font-extrabold scale-105 shadow-md' },
+                { day: 'Day 8', price: '₹2,610', change: '+6.5%', color: 'bg-emerald-500/20 border-emerald-400 text-emerald-300' },
+                { day: 'Day 11', price: '₹2,520', change: '+2.8%', color: 'bg-amber-500/20 border-amber-400 text-amber-300' },
+                { day: 'Day 14', price: '₹2,440', change: '-0.4%', color: 'bg-rose-500/20 border-rose-400 text-rose-300' }
+              ].map((item, idx) => (
+                <div key={idx} className={`p-3.5 rounded-2xl border text-center transition-transform ${item.color}`}>
+                  <p className="text-[10px] font-extrabold uppercase opacity-90">{item.day}</p>
+                  <p className="font-display font-black text-sm my-1">{item.price}</p>
+                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-black/20">
+                    {item.change}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* LIVE MANDI EXPLORER CARDS GRID */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display font-black text-2xl text-[#002117]">
+                Live APMC Mandi Rates ({filteredMandis.length} Mandis Found)
+              </h2>
+              <span className="text-xs font-semibold text-[#6c7a71]">
+                Synced with Agmarknet & Kisan Suvidha APIs
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMandis.map((mandi) => (
+                <div 
+                  key={mandi.id}
+                  className="rounded-3xl p-6 bg-white border border-[#006c49]/20 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5 group"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold uppercase bg-[#dcfce7] text-[#006c49] px-3 py-1 rounded-full border border-[#006c49]/20">
+                        📍 {mandi.district}, {mandi.state}
+                      </span>
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${mandi.adviceBg}`}>
+                        {mandi.aiAdvice}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="font-display font-bold text-xl text-[#002117] group-hover:text-[#006c49] transition-colors">
+                        {mandi.mandiName}
+                      </h3>
+                      <p className="text-xs text-[#6c7a71] font-semibold">Crop: <strong>{mandi.crop}</strong></p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#dcfce7]/30 border border-[#006c49]/10 space-y-2">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs text-[#6c7a71]">Modal Rate:</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="font-display font-black text-2xl text-[#006c49]">₹{mandi.modalPrice.toLocaleString('en-IN')}</span>
+                          <span className="text-xs text-[#6c7a71]">/qtl</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-[#3c4a42] border-t border-[#006c49]/10 pt-2 font-medium">
+                        <span>Min: <strong>₹{mandi.minPrice}</strong></span>
+                        <span>Max: <strong>₹{mandi.maxPrice}</strong></span>
+                        <span className="text-emerald-700 font-bold">{mandi.trend}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-[#6c7a71] font-semibold">
+                      <span>Daily Arrival: {mandi.arrivals}</span>
+                      <span>Updated: {mandi.lastUpdated}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-[#006c49]/10">
+                    <button 
+                      onClick={() => handleSetAlert(mandi.mandiName)}
+                      className="flex-1 py-2.5 rounded-xl bg-[#dcfce7] text-[#006c49] text-xs font-bold hover:bg-[#006c49] hover:text-white transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Bell className="w-3.5 h-3.5" />
+                      <span>Set Alert</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setCommodity(mandi.crop);
+                        setActiveMarketTab('bestMarket');
+                      }}
+                      className="flex-1 py-2.5 rounded-xl bg-[#006c49] text-white text-xs font-bold shadow-sm hover:bg-[#046a38] transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Optimize</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 4: FIND BUYERS & SELL PRODUCE */}
+      {activeMarketTab === 'buyers' && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-display font-black text-3xl text-[#002117]">Find Corporate Buyers & Sell</h1>
+              <p className="text-xs text-[#6c7a71]">Connect with verified processors, wholesalers, and distributors seeking agricultural produce.</p>
+            </div>
+            <button 
+              onClick={() => setIsListModalOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold shadow-md hover:bg-[#046a38] transition-all flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>+ List Produce to Sell</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {buyersList.map((b) => (
+              <div key={b.id} className="rounded-3xl p-6 bg-white border border-[#006c49]/15 shadow-sm space-y-4 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-[#006c49] px-2.5 py-1 rounded-full">
+                      {b.type}
+                    </span>
+                    <span className="text-xs text-[#6c7a71] font-semibold">{b.distance}</span>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-display font-bold text-lg text-[#002117]">{b.name}</h3>
+                      {b.verified && <ShieldCheck className="w-4 h-4 text-[#006c49]" />}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-[#dcfce7]/40 text-xs space-y-1">
+                    <p className="text-[#6c7a71]">Required Crop: <strong className="text-[#002117]">{b.requiredCrop}</strong></p>
+                    <p className="text-[#6c7a71]">Target Offer: <strong className="text-[#006c49]">{b.targetPrice}</strong></p>
+                    <p className="text-[#6c7a71]">Monthly Volume: <strong className="text-[#002117]">{b.neededQty}</strong></p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-[#006c49]/10">
+                  <button 
+                    onClick={() => setSelectedBuyer(b)}
+                    className="flex-1 py-2.5 rounded-xl bg-[#dcfce7] text-[#006c49] text-xs font-bold hover:bg-[#006c49] hover:text-white transition-all"
+                  >
+                    View Details
+                  </button>
+                  <button 
+                    onClick={() => setSelectedBuyer(b)}
+                    className="flex-1 py-2.5 rounded-xl bg-[#006c49] text-white text-xs font-bold shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Contact</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* TAB 5: FARMER ROI CALCULATOR */}
       {activeMarketTab === 'roi' && (
-        <div className="rounded-3xl p-8 bg-white border border-[#006c49]/20 shadow-xl space-y-6">
+        <div className="rounded-3xl p-8 bg-white border border-[#006c49]/20 shadow-xl space-y-6 animate-in fade-in">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-[#006c49] text-white flex items-center justify-center font-bold">
               <Calculator className="w-6 h-6" />
@@ -452,7 +952,7 @@ export default function Marketplace() {
 
               <div className="grid grid-cols-2 gap-3 text-xs border-t border-white/20 pt-3">
                 <div>
-                  <p className="text-[#bbcabf]">Pesticide Cost Reduction:</p>
+                  <p className="text-[#bbcabf]">Pesticide Cost Savings:</p>
                   <p className="font-bold text-white">-32% (₹{(roiAcreage * 1240).toLocaleString('en-IN')} saved)</p>
                 </div>
                 <div>
@@ -465,55 +965,133 @@ export default function Marketplace() {
         </div>
       )}
 
-      {/* TAB 4: FIND BUYERS & SELL PRODUCE */}
-      {activeMarketTab === 'buyers' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-display font-black text-3xl text-[#002117]">Find Buyers</h1>
-              <p className="text-xs text-[#6c7a71]">Connect with verified processors, wholesalers, and distributors seeking agricultural produce.</p>
+      {/* LIST PRODUCE MODAL DIALOG */}
+      {isListModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-[#006c49]/30 animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-[#006c49]/15 pb-4">
+              <div className="flex items-center gap-2 text-[#006c49]">
+                <PlusCircle className="w-6 h-6" />
+                <h3 className="font-display font-black text-xl text-[#002117]">List Produce for Buyers</h3>
+              </div>
+              <button onClick={() => setIsListModalOpen(false)} className="text-gray-400 hover:text-red-500 text-lg font-bold">✕</button>
             </div>
-            <button className="px-4 py-2 rounded-xl bg-[#006c49] text-white text-xs font-bold">
-              + List Produce to Sell
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {buyersList.map((b) => (
-              <div key={b.id} className="rounded-3xl p-6 bg-white border border-[#006c49]/15 shadow-sm space-y-4 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-[#006c49] px-2.5 py-1 rounded-full">
-                      {b.type}
-                    </span>
-                    <span className="text-xs text-[#6c7a71] font-semibold">{b.distance}</span>
-                  </div>
+            <form onSubmit={handleAddProduceSubmit} className="space-y-4 text-xs font-bold text-[#00422b]">
+              <div>
+                <label className="block mb-1 text-[#6c7a71]">CROP NAME</label>
+                <input 
+                  type="text" 
+                  value={newProduce.cropName} 
+                  onChange={(e) => setNewProduce({ ...newProduce, cropName: e.target.value })}
+                  className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117]"
+                  required
+                />
+              </div>
 
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-display font-bold text-lg text-[#002117]">{b.name}</h3>
-                      {b.verified && <ShieldCheck className="w-4 h-4 text-[#006c49]" />}
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-[#dcfce7]/40 text-xs space-y-1">
-                    <p className="text-[#6c7a71]">Required Crop: <strong className="text-[#002117]">{b.requiredCrop}</strong></p>
-                    <p className="text-[#6c7a71]">Target Offer: <strong className="text-[#006c49]">{b.targetPrice}</strong></p>
-                    <p className="text-[#6c7a71]">Monthly Volume: <strong className="text-[#002117]">{b.neededQty}</strong></p>
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-[#6c7a71]">QUANTITY (QUINTALS)</label>
+                  <input 
+                    type="number" 
+                    value={newProduce.quantity} 
+                    onChange={(e) => setNewProduce({ ...newProduce, quantity: e.target.value })}
+                    className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117]"
+                    required
+                  />
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-[#006c49]/10">
-                  <button className="flex-1 py-2.5 rounded-xl bg-[#dcfce7] text-[#006c49] text-xs font-bold hover:bg-[#006c49] hover:text-white transition-all">
-                    View Profile
-                  </button>
-                  <button className="flex-1 py-2.5 rounded-xl bg-[#006c49] text-white text-xs font-bold shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Contact</span>
-                  </button>
+                <div>
+                  <label className="block mb-1 text-[#6c7a71]">ASKING PRICE (₹/QTL)</label>
+                  <input 
+                    type="number" 
+                    value={newProduce.askingPrice} 
+                    onChange={(e) => setNewProduce({ ...newProduce, askingPrice: e.target.value })}
+                    className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117]"
+                    required
+                  />
                 </div>
               </div>
-            ))}
+
+              <div>
+                <label className="block mb-1 text-[#6c7a71]">FARM LOCATION / MANDI NEARBY</label>
+                <input 
+                  type="text" 
+                  value={newProduce.location} 
+                  onChange={(e) => setNewProduce({ ...newProduce, location: e.target.value })}
+                  className="w-full p-3 rounded-2xl bg-[#dcfce7]/60 border border-[#006c49]/20 text-[#002117]"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold uppercase tracking-wider shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>CONFIRM & POST LISTING</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CONTACT BUYER MODAL DIALOG */}
+      {selectedBuyer && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-[#006c49]/30 animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-[#006c49]/15 pb-3">
+              <div>
+                <span className="text-[9px] font-extrabold uppercase bg-emerald-100 text-[#006c49] px-2 py-0.5 rounded-full">
+                  {selectedBuyer.type}
+                </span>
+                <h3 className="font-display font-black text-xl text-[#002117] mt-1">{selectedBuyer.name}</h3>
+              </div>
+              <button onClick={() => { setSelectedBuyer(null); setContactMessageSent(false); }} className="text-gray-400 hover:text-red-500 text-lg font-bold">✕</button>
+            </div>
+
+            {!contactMessageSent ? (
+              <div className="space-y-4 text-xs font-semibold text-[#00422b]">
+                <div className="p-4 rounded-2xl bg-[#dcfce7]/40 space-y-2">
+                  <p className="text-[#6c7a71]">Verified Phone: <strong className="text-[#002117]">{selectedBuyer.contactPhone}</strong></p>
+                  <p className="text-[#6c7a71]">Email: <strong className="text-[#006c49]">{selectedBuyer.email}</strong></p>
+                  <p className="text-[#6c7a71]">Target Offer: <strong className="text-[#006c49]">{selectedBuyer.targetPrice}</strong></p>
+                </div>
+
+                <div>
+                  <label className="block text-[#6c7a71] font-bold mb-1">Your Message / Offer Details:</label>
+                  <textarea
+                    rows={3}
+                    defaultValue={`Hello ${selectedBuyer.name}, I have harvested ${selectedBuyer.requiredCrop} available for immediate sale.`}
+                    className="w-full p-3 rounded-2xl bg-[#dcfce7]/40 border border-[#006c49]/20 text-[#002117] focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={() => setContactMessageSent(true)}
+                  className="w-full py-3 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold uppercase shadow-md hover:bg-[#046a38] transition-all flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Send Offer Directly</span>
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-6 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#006c49] flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h4 className="font-display font-bold text-lg text-[#002117]">Offer Message Sent!</h4>
+                <p className="text-xs text-[#6c7a71]">
+                  The corporate buyer team has received your offer details and will reach out via phone ({selectedBuyer.contactPhone}) shortly.
+                </p>
+                <button
+                  onClick={() => { setSelectedBuyer(null); setContactMessageSent(false); }}
+                  className="px-6 py-2 rounded-xl bg-[#006c49] text-white text-xs font-bold"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

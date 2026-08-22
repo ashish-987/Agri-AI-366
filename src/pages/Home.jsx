@@ -104,10 +104,10 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
   ];
 
   return (
-    <div className="space-y-16 py-2 w-full">
+    <div className="w-full space-y-16 py-4 px-4 sm:px-8">
       
       {/* SEAMLESS HERO SECTION (EXACT DESIGN MATCH) */}
-      <section className="relative w-full min-h-[calc(100vh-100px)] py-6 md:py-10 px-2 sm:px-6 flex flex-col lg:flex-row items-center justify-between gap-8 overflow-hidden">
+      <section className="relative w-full min-h-[calc(100vh-140px)] py-6 md:py-10 flex flex-col lg:flex-row items-center justify-between gap-8 overflow-hidden">
         
         {/* 3D CANVAS IN BACKGROUND LAYER */}
         <div className="absolute top-0 right-0 bottom-0 w-full lg:w-3/5 h-full z-0 opacity-95 pointer-events-none">
@@ -226,7 +226,7 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
           </p>
         </div>
 
-        {/* 6 PASTEL SOFT COLOR CARDS */}
+        {/* 6 CRISP WHITE CARDS WITH LIGHT GREEN ACCENTS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
           {ecosystemCards.map((card) => {
             const Icon = card.icon;
@@ -240,7 +240,7 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
                     setActiveTab(card.id);
                   }
                 }}
-                className={`${card.bg} rounded-3xl p-7 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between space-y-6 group border border-white/60`}
+                className={`bg-white rounded-3xl p-7 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between space-y-6 group border border-emerald-100 hover:border-emerald-300`}
               >
                 <div className="space-y-4">
                   <div className={`w-12 h-12 rounded-2xl ${card.iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
@@ -270,7 +270,7 @@ export default function Home({ isLoggedIn, onOpenAuth, onGoogleLogin, setActiveT
       </section>
 
       {/* IMPORTANT FAQ ACCORDION SECTION */}
-      <section className="glass-card rounded-3xl p-6 sm:p-10 border border-white/90 shadow-xl space-y-6 w-full">
+      <section className="bg-white rounded-3xl p-6 sm:p-10 border border-emerald-100 shadow-sm space-y-6 w-full">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#006c49] bg-[#006c49]/15 px-3 py-1 rounded-full">
             <HelpCircle className="w-4 h-4 text-[#006c49]" />
