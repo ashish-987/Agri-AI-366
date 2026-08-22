@@ -3,11 +3,9 @@ import { Sprout, ShieldCheck, Phone, Mail, Heart } from 'lucide-react';
 
 export default function Footer({ setActiveTab }) {
   return (
-    <footer className="w-full bg-white text-slate-600 pt-12 pb-8 mt-12 border-t border-emerald-100 relative overflow-hidden shadow-sm">
-      {/* Background soft accent */}
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-50 rounded-full blur-3xl pointer-events-none" />
-      
+    <footer className="w-full bg-white text-[#3c4a42] pt-12 pb-8 mt-12 border-t border-emerald-200/80 relative overflow-hidden shadow-sm">
       <div className="w-full px-6 sm:px-12 grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+
         {/* Brand info */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -71,12 +69,15 @@ export default function Footer({ setActiveTab }) {
         </div>
       </div>
 
-      <div className="w-full px-6 sm:px-12 mt-12 pt-6 border-t border-emerald-100 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 font-semibold">
+      <div className="w-full px-6 sm:px-12 mt-10 pt-6 border-t border-emerald-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold text-[#00422b] relative z-10">
         <p>© 2026 AgriAI 366 Ecosystem. All rights reserved.</p>
-        <p className="flex items-center gap-1 mt-2 md:mt-0">
-          Built with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> for Indian Farmers & Smart Agriculture.
-        </p>
+        <div className="inline-flex items-center gap-1.5 bg-emerald-100/90 text-[#00422b] px-3.5 py-1.5 rounded-full border border-emerald-300/80 shadow-sm">
+          <span>Built with</span>
+          <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+          <span>for Indian Farmers &amp; Smart Agriculture.</span>
+        </div>
       </div>
     </footer>
   );
 }
+
