@@ -37,12 +37,11 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
   const languages = ['English', 'हिंदी (Hindi)', 'ਪੰਜਾਬੀ (Punjabi)', 'मराठी (Marathi)', 'తెలుగు (Telugu)'];
 
   const sidebarContent = (
-    <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar pr-1">
+    <div className="h-full flex flex-col justify-between overflow-hidden">
       
-      {/* Brand Logo & Modules List */}
-      <div className="space-y-6">
-        {/* Logo & Mobile Close */}
-        <div className="flex items-center justify-between px-2 pt-2">
+      {/* TOP HEADER: BRAND LOGO (FIXED AT TOP OF SIDEBAR) */}
+      <div className="flex-none pb-3 border-b border-emerald-100/60">
+        <div className="flex items-center justify-between px-1 pt-1">
           <button 
             onClick={() => {
               setActiveTab('home');
@@ -70,51 +69,51 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
             </button>
           )}
         </div>
-
-        {/* Navigation Items Vertical List */}
-        <nav className="space-y-1.5 pt-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            const isLocked = !isLoggedIn && item.id !== 'home';
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-extrabold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
-                    : 'text-[#065f46] hover:bg-emerald-50/80 hover:text-[#006c49]'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : 'text-[#006c49]'}`} />
-                  <span>{item.label}</span>
-                </div>
-
-                {item.badge && (
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#006c49]'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-
-                {isLocked && (
-                  <Lock className="w-3.5 h-3.5 text-amber-600" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
       </div>
 
-      {/* Bottom User Card / Controls */}
-      <div className="pt-4 space-y-3">
+      {/* MIDDLE: NAVIGATION LIST (SCROLLS INTERNALLY ONLY IF NEEDED) */}
+      <nav className="flex-1 overflow-y-auto no-scrollbar py-3 space-y-1.5 pr-1">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          const isLocked = !isLoggedIn && item.id !== 'home';
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-extrabold transition-all duration-200 ${
+                isActive
+                  ? 'bg-gradient-to-r from-[#006c49] to-[#046a38] text-white shadow-md ring-2 ring-[#006c49]/20 scale-[1.02]'
+                  : 'text-[#065f46] hover:bg-emerald-50/80 hover:text-[#006c49]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : 'text-[#006c49]'}`} />
+                <span>{item.label}</span>
+              </div>
+
+              {item.badge && (
+                <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#006c49]'
+                }`}>
+                  {item.badge}
+                </span>
+              )}
+
+              {isLocked && (
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* BOTTOM FIXED CONTROLS & USER PROFILE CARD (ALWAYS PINNED TO SIDEBAR BOTTOM) */}
+      <div className="flex-none pt-3 space-y-3 border-t border-emerald-100">
         
         {/* Language Switcher */}
         <div className="relative">
@@ -162,10 +161,10 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
             <span>Login / Register</span>
           </button>
         ) : (
-          <div className="p-3 rounded-2xl bg-white/90 border border-[#006c49]/20 flex items-center justify-between shadow-sm">
+          <div className="p-3 rounded-2xl bg-white/90 border border-[#006c49]/20 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
               <img
-                src="/assets/agri_expert_portrait.jpg"
+                src={user?.avatar || "/assets/agri_expert_portrait.jpg"}
                 alt="Farmer Avatar"
                 className="w-9 h-9 rounded-full object-cover border-2 border-[#006c49]"
               />
@@ -207,8 +206,8 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
 
   return (
     <>
-      {/* DESKTOP PERMANENT SIDEBAR */}
-      <aside className="hidden lg:flex w-64 xl:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex-col justify-between transition-all bg-white border-r border-emerald-100/80 shadow-sm">
+      {/* FIXED 100VH DESKTOP SIDEBAR - DOES NOT SCROLL DOWN WITH SITE CONTENT */}
+      <aside className="hidden lg:flex w-64 xl:w-72 flex-none h-screen sticky top-0 z-40 p-4 flex-col justify-between bg-white border-r border-emerald-100/80 shadow-sm overflow-hidden">
         {sidebarContent}
       </aside>
 
@@ -222,7 +221,7 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
           />
 
           {/* Drawer Container */}
-          <div className="relative w-80 max-w-[85vw] bg-white h-full p-4 shadow-2xl z-10 flex flex-col animate-in slide-in-from-left duration-300">
+          <div className="relative w-80 max-w-[85vw] bg-white h-full p-4 shadow-2xl z-10 flex flex-col overflow-hidden animate-in slide-in-from-left duration-300">
             {sidebarContent}
           </div>
         </div>
@@ -230,4 +229,3 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
     </>
   );
 }
-

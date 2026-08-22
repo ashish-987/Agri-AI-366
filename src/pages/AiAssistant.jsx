@@ -20,7 +20,7 @@ export default function AiAssistant({ activePreset }) {
     {
       sender: 'ai',
       time: '09:15 AM',
-      text: "Namaste Gurpreet! I am your AgriAI 366 Voice Agronomist. Soil moisture in Sector A (Wheat) is at 62% optimal range today. How can I assist your farm operation?"
+      text: "Namaste Gurpreet! I am your AgriAI 366 Voice Agronomist. Soil moisture in Sector A (Wheat) is at 62% optimal range today according to satellite radar. How can I assist your farm operation?"
     },
     {
       sender: 'user',
@@ -31,8 +31,8 @@ export default function AiAssistant({ activePreset }) {
       sender: 'ai',
       time: '10:31 AM',
       text: "Based on your crop lifecycle telemetry (Day 42 Tillering stage), lower yellowing is a classic signal of Nitrogen deficiency or early Yellow Rust infection.",
-      insightBox: "Recommendation: Apply 25kg/acre Urea top-dressing followed by immediate light drip irrigation. Upload a leaf scan for 98.4% pathogen confirmation.",
-      followUp: "Would you like me to schedule an irrigation trigger for 02:00 PM?"
+      insightBox: "Recommendation: Apply 25kg/acre Urea top-dressing followed by light irrigation. Upload a leaf scan for 98.4% pathogen confirmation.",
+      followUp: "Would you like me to schedule an irrigation reminder for 02:00 PM?"
     }
   ]);
 
@@ -109,7 +109,7 @@ export default function AiAssistant({ activePreset }) {
     setInputText('');
 
     setTimeout(() => {
-      const aiReply = "Based on your soil NPK test of 42 ppm, apply 25kg Urea per acre followed by light drip irrigation.";
+      const aiReply = "Based on your soil NPK test model of 42 ppm, apply 25kg Urea per acre followed by light drip irrigation.";
       setMessages((prev) => [
         ...prev,
         {
@@ -136,20 +136,20 @@ export default function AiAssistant({ activePreset }) {
             AgriAI 366 Smart Assistant
           </h1>
           <p className="text-xs sm:text-sm text-[#3c4a42] font-medium">
-            24/7 Multilingual AI Agronomist trained on ICAR crop data, soil telemetry, and APMC mandi pricing.
+            24/7 Multilingual AI Agronomist trained on ICAR crop data, satellite telemetry, and APMC mandi pricing.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* LEFT COLUMN: ACTIVE CONTEXT & SENSOR MAP */}
+        {/* LEFT COLUMN: ACTIVE CONTEXT */}
         <div className="lg:col-span-4 space-y-6">
           
           <div className="rounded-3xl p-6 bg-white border border-emerald-100 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase text-[#006c49] tracking-wider">
-                ACTIVE TELEMETRY CONTEXT
+                SATELLITE &amp; FIELD CONTEXT
               </span>
               <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-[#006c49]">
                 <Sparkles className="w-4 h-4" />
@@ -191,12 +191,12 @@ export default function AiAssistant({ activePreset }) {
           </div>
 
           <div className="rounded-3xl overflow-hidden shadow-sm border border-emerald-100 relative bg-[#002117] min-h-[160px] flex flex-col justify-end p-5 text-white">
-            <img src="/assets/smart_farm_aerial.jpg" alt="Sensor Map Node" className="absolute inset-0 w-full h-full object-cover opacity-70" />
+            <img src="/assets/smart_farm_aerial.jpg" alt="Satellite Map Node" className="absolute inset-0 w-full h-full object-cover opacity-70" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
             
             <div className="relative z-10 flex items-center gap-2 text-xs font-bold text-white">
               <MapPin className="w-4 h-4 text-[#6ffbbe]" />
-              <span>IoT Node A1 (Ludhiana Mandi Sector)</span>
+              <span>Satellite Node A1 (Ludhiana Mandi Sector)</span>
             </div>
           </div>
 

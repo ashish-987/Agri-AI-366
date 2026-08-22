@@ -13,7 +13,7 @@ import {
   Calendar,
   Check,
   Zap,
-  Radio,
+  Globe,
   Play,
   ShieldCheck,
   BarChart2,
@@ -29,12 +29,12 @@ export default function FarmManagement() {
 
   const triggerIrrigation = () => {
     setIrrigationActive(true);
-    setActionNotice('💧 Automated Drip Irrigation initialized for ' + activeSector + ' via smart IoT relay.');
+    setActionNotice('💧 Drip Irrigation schedule activated for ' + activeSector + ' based on satellite soil moisture index.');
     setTimeout(() => setActionNotice(''), 5000);
   };
 
   const triggerScan = () => {
-    setActionNotice('🛰️ High-resolution satellite NDVI telemetry refreshed! Field health optimal (NDVI 0.84).');
+    setActionNotice('🛰️ High-resolution Sentinel-2 satellite NDVI telemetry refreshed! Field health optimal (NDVI 0.84).');
     setTimeout(() => setActionNotice(''), 5000);
   };
 
@@ -56,14 +56,14 @@ export default function FarmManagement() {
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-emerald-100 pb-6">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-[#006c49] text-[11px] font-extrabold uppercase tracking-wider border border-emerald-200">
-            <Radio className="w-3.5 h-3.5 text-[#006c49] animate-pulse" />
-            <span>MISSION CONTROL • DIGITAL TWIN LIVE</span>
+            <Globe className="w-3.5 h-3.5 text-[#006c49] animate-pulse" />
+            <span>SATELLITE &amp; AI ANALYTICS • DIGITAL TWIN LIVE</span>
           </div>
           <h1 className="font-display font-black text-3xl sm:text-4xl text-[#002117]">
-            Farm Operations & Telemetry
+            Farm Operations &amp; Crop Intelligence
           </h1>
           <p className="text-xs sm:text-sm text-[#3c4a42] font-medium">
-            Real-time IoT sensors, crop lifecycle analytics, digital twin soil health, and resource management.
+            Satellite NDVI imaging, crop lifecycle analytics, digital twin soil health models, and yield forecasts.
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function FarmManagement() {
             className="px-5 py-2.5 rounded-2xl bg-[#006c49] text-white text-xs font-extrabold shadow-md hover:bg-[#046a38] transition-all flex items-center gap-2"
           >
             <Droplets className="w-4 h-4 text-emerald-300" />
-            <span>{irrigationActive ? 'Irrigation Active 💧' : 'Trigger Drip Irrigation'}</span>
+            <span>{irrigationActive ? 'Irrigation Schedule Active 💧' : 'Trigger Drip Irrigation'}</span>
           </button>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function FarmManagement() {
               <Sparkles className="w-4 h-4 text-[#006c49]" /> AI Agronomist Guidance
             </p>
             <p className="text-[#3c4a42] leading-relaxed font-medium">
-              Current tillering rate is 5% ahead of schedule due to optimal soil moisture (62%). Applying a mild nitrogen top-up in 3 days will maximize tiller survival and increase head count.
+              Current tillering rate is 5% ahead of schedule due to optimal satellite moisture levels (62%). Applying a mild nitrogen top-up in 3 days will maximize tiller survival and increase head count.
             </p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function FarmManagement() {
           <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
             <div>
               <h3 className="font-display font-extrabold text-xl text-[#002117]">Digital Twin Analysis</h3>
-              <p className="text-[10px] text-[#6c7a71] font-semibold">Real-time IoT Satellite Telemetry</p>
+              <p className="text-[10px] text-[#6c7a71] font-semibold">Real-time Satellite Data Analytics</p>
             </div>
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
           </div>
@@ -250,7 +250,7 @@ export default function FarmManagement() {
                   <Sprout className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <p className="text-[9px] text-[#6c7a71] uppercase font-extrabold">SOIL VEGETATION (NDVI)</p>
+                  <p className="text-[9px] text-[#6c7a71] uppercase font-extrabold">CROP CANOPY (NDVI)</p>
                   <p className="font-extrabold text-[#002117] text-sm">NDVI 0.84 <span className="text-emerald-700 text-xs">(Optimal)</span></p>
                 </div>
               </div>
@@ -263,11 +263,11 @@ export default function FarmManagement() {
                   <Droplets className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <p className="text-[9px] text-[#6c7a71] uppercase font-extrabold">SMART IRRIGATION</p>
+                  <p className="text-[9px] text-[#6c7a71] uppercase font-extrabold">IRRIGATION ADVISORY</p>
                   <p className="font-extrabold text-[#002117] text-sm">{irrigationActive ? 'Running Drip Cycle' : 'Scheduled (2:00 PM)'}</p>
                 </div>
               </div>
-              <button onClick={triggerIrrigation} className="text-[10px] font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full hover:bg-blue-700">
+              <button onClick={triggerIrrigation} className="text-[10px] font-bold bg-blue-600 text-[#fff] px-2.5 py-1 rounded-full hover:bg-blue-700">
                 {irrigationActive ? 'Running' : 'Start'}
               </button>
             </div>
@@ -291,12 +291,12 @@ export default function FarmManagement() {
 
       {/* FIELD HEALTH TELEMETRY GAUGES */}
       <div className="space-y-4">
-        <h2 className="font-display font-extrabold text-2xl text-[#002117]">Field Health Gauges</h2>
+        <h2 className="font-display font-extrabold text-2xl text-[#002117]">Field Health Metrics</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="rounded-3xl p-6 bg-white border border-emerald-100 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#6c7a71] font-extrabold">SOIL MOISTURE</span>
+              <span className="text-[#6c7a71] font-extrabold">SOIL MOISTURE INDEX</span>
               <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">Optimal</span>
             </div>
             <p className="font-display font-black text-3xl text-[#002117]">62%</p>
@@ -307,7 +307,7 @@ export default function FarmManagement() {
 
           <div className="rounded-3xl p-6 bg-white border border-emerald-100 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#6c7a71] font-extrabold">NITROGEN (NPK)</span>
+              <span className="text-[#6c7a71] font-extrabold">NITROGEN MODEL (NPK)</span>
               <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">High</span>
             </div>
             <p className="font-display font-black text-3xl text-[#002117]">42 <span className="text-xs text-[#6c7a71] font-medium">ppm</span></p>
@@ -322,7 +322,7 @@ export default function FarmManagement() {
               <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">Low Risk</span>
             </div>
             <p className="font-display font-black text-3xl text-[#002117]">Safe</p>
-            <p className="text-[11px] text-[#6c7a71] font-medium">Drone scan completed 2h ago</p>
+            <p className="text-[11px] text-[#6c7a71] font-medium">AI analysis refreshed 2h ago</p>
           </div>
         </div>
       </div>
@@ -363,7 +363,7 @@ export default function FarmManagement() {
 
             <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex items-center justify-between text-xs">
               <div>
-                <p className="font-bold text-[#002117]">Tractor Leasing & Labor</p>
+                <p className="font-bold text-[#002117]">Tractor Leasing &amp; Labor</p>
                 <p className="text-[10px] text-[#6c7a71]">Nov 05, 2025</p>
               </div>
               <span className="font-black text-[#002117] text-sm">₹17,700</span>
@@ -374,7 +374,7 @@ export default function FarmManagement() {
         {/* Activity Log */}
         <div className="lg:col-span-6 rounded-3xl p-7 bg-white border border-emerald-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-display font-extrabold text-xl text-[#002117]">IoT Activity Log</h3>
+            <h3 className="font-display font-extrabold text-xl text-[#002117]">Farm Activity Log</h3>
             <button className="text-xs font-extrabold uppercase text-[#006c49] hover:underline">View All</button>
           </div>
 
@@ -386,17 +386,17 @@ export default function FarmManagement() {
                 </span>
                 <span className="text-[10px] text-[#6c7a71] font-semibold">Just now</span>
               </div>
-              <p className="text-[#3c4a42]">Completed full field drone scan. Status: <strong className="text-emerald-800">Healthy</strong>. No immediate actions required.</p>
+              <p className="text-[#3c4a42]">Completed camera leaf scan. Status: <strong className="text-emerald-800">Healthy</strong>. No immediate actions required.</p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white border border-emerald-100 space-y-0.5">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#002117] flex items-center gap-1.5">
-                  <Droplets className="w-4 h-4 text-blue-600" /> Irrigation Cycle Started
+                  <Droplets className="w-4 h-4 text-blue-600" /> Irrigation Advisory
                 </span>
                 <span className="text-[10px] text-[#6c7a71]">6:00 AM</span>
               </div>
-              <p className="text-[#3c4a42]">Sector A automated drip irrigation engaged based on soil moisture drop.</p>
+              <p className="text-[#3c4a42]">Sector A drip irrigation advisory updated based on weather forecast.</p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white border border-emerald-100 space-y-0.5">
@@ -406,7 +406,7 @@ export default function FarmManagement() {
                 </span>
                 <span className="text-[10px] text-[#6c7a71]">2 Days Ago</span>
               </div>
-              <p className="text-[#3c4a42]">NPK standard mix applied via fertigation to Sector A and B.</p>
+              <p className="text-[#3c4a42]">NPK standard mix applied to Sector A and B.</p>
             </div>
           </div>
         </div>
