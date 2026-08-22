@@ -2,8 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
+from app.database_seeder import seed_initial_data
 from app.models import all_models  # Ensures models are imported for metadata
+
+# Automatically initialize database tables & seed initial records on startup
+Base.metadata.create_all(bind=engine)
+with SessionLocal() as db_session:
+    seed_initial_data(db_session)
 
 # Import all 20 domain routers
 from app.routers import (
