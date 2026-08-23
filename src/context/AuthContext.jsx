@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
           authUser.user_metadata?.full_name ||
           authUser.email?.split('@')[0] ||
           'Farmer',
-        phone: authUser.user_metadata?.phone || authUser.phone || '',
+        phone: authUser.user_metadata?.phone || '',
         email: authUser.email || '',
         role: 'farmer'
       };
@@ -221,55 +221,6 @@ export function AuthProvider({ children }) {
   };
 
   // ===================================================
-  // 9.1 SEND PHONE OTP
-  // ===================================================
-  const sendPhoneOTP = async (phone) => {
-    const formattedPhone = phone.trim();
-
-    if (!formattedPhone) {
-      throw new Error('Please enter your phone number.');
-    }
-
-    const { data, error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  };
-
-  // ===================================================
-  // 9.2 VERIFY PHONE OTP
-  // ===================================================
-  const verifyPhoneOTP = async (phone, otp) => {
-    const formattedPhone = phone.trim();
-    const formattedOTP = otp.trim();
-
-    if (!formattedPhone) {
-      throw new Error('Please enter your phone number.');
-    }
-
-    if (!formattedOTP) {
-      throw new Error('Please enter the OTP.');
-    }
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: formattedPhone,
-      token: formattedOTP,
-      type: 'sms'
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  };
-
-  // ===================================================
   // 10. LOGOUT
   // ===================================================
   const logout = async () => {
@@ -326,7 +277,7 @@ export function AuthProvider({ children }) {
         session.user.email?.split('@')[0] ||
         'Farmer',
       email: session.user.email || profile?.email || '',
-      phone: profile?.phone || session.user.phone || session.user.user_metadata?.phone || '',
+      phone: profile?.phone || session.user.user_metadata?.phone || '',
       role: profile?.role || 'farmer',
       state: profile?.state || '',
       district: profile?.district || '',
@@ -349,12 +300,7 @@ export function AuthProvider({ children }) {
     // Authentication functions
     login,
     signup,
-
     loginWithGoogle,
-
-    sendPhoneOTP,
-    verifyPhoneOTP,
-
     logout,
 
     // Profile
