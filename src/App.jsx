@@ -11,6 +11,9 @@ import Marketplace from './pages/Marketplace';
 import WeatherIntel from './pages/WeatherIntel';
 import DiseaseScan from './pages/DiseaseScan';
 import FarmManagement from './pages/FarmManagement';
+import FieldManagement from './pages/FieldManagement';
+import CropManagement from './pages/CropManagement';
+import SoilHealth from './pages/SoilHealth';
 import EquipmentHub from './pages/EquipmentHub';
 import ExpertConsultation from './pages/ExpertConsultation';
 import CommunityForum from './pages/CommunityForum';
@@ -119,6 +122,15 @@ export default function App() {
 
       case 'farm':
         return <FarmManagement />;
+
+      case 'fields':
+        return <FieldManagement />;
+
+      case 'crops':
+        return <CropManagement />;
+
+      case 'soil':
+        return <SoilHealth />;
 
       case 'equipment':
         return <EquipmentHub />;

@@ -160,13 +160,7 @@ export default function FarmManagement() {
 
   // Load farms
   useEffect(() => {
-    if (!user?.id) {
-      setFarms([]);
-      setLoading(false);
-      return;
-    }
-
-    loadFarms();
+    fetchFarms();
   }, [user?.id]);
 
   // Load fields when selectedFarm changes
@@ -200,27 +194,37 @@ export default function FarmManagement() {
     loadSoilRecords(selectedField.id);
   }, [selectedField?.id]);
 
-  const loadFarms = async () => {
+  const fetchFarms = async () => {
     try {
       setLoading(true);
       setError('');
 
-      const data = await getMyFarms(user.id);
-      setFarms(data);
+      const USER_ID = user?.id || "YOUR-AUTH-USER-UUID";
 
-      if (data && data.length > 0) {
-        const initial = data[0];
-        setActiveFarmId((prev) => (data.some((f) => f.id === prev) ? prev : initial.id));
-        setSelectedFarm((prev) => (data.find((f) => f.id === prev?.id) || initial));
+      const response = await fetch(
+        `http://127.0.0.1:8000/farms/${USER_ID}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch farms");
+      }
+
+      const farmList = data.farms || [];
+      setFarms(farmList);
+
+      if (farmList.length > 0) {
+        const initial = farmList[0];
+        setActiveFarmId((prev) => (farmList.some((f) => f.id === prev) ? prev : initial.id));
+        setSelectedFarm((prev) => (farmList.find((f) => f.id === prev?.id) || initial));
       } else {
         setActiveFarmId(null);
         setSelectedFarm(null);
       }
-    } catch (err) {
-      console.error(err);
-      setError(
-        err?.message || 'Unable to load farms.'
-      );
+    } catch (error) {
+      console.error("Farm fetch error:", error);
+      setError(error.message || "Failed to fetch farms");
     } finally {
       setLoading(false);
     }
@@ -295,19 +299,47 @@ export default function FarmManagement() {
       setError('');
       setSuccess('');
 
-      const newFarm = await createFarm({
-        userId: user.id,
-        farmName: farmForm.farmName,
-        state: farmForm.state,
-        district: farmForm.district,
-        village: farmForm.village,
-        areaAcres: farmForm.areaAcres,
-        latitude: farmForm.latitude,
-        longitude: farmForm.longitude
+      const farmPayload = {
+        user_id: user.id,
+        farm_name: farmForm.farmName,
+        state: farmForm.state || null,
+        district: farmForm.district || null,
+        village: farmForm.village || null,
+        area_acres: farmForm.areaAcres ? parseFloat(farmForm.areaAcres) : null,
+        latitude: farmForm.latitude ? parseFloat(farmForm.latitude) : null,
+        longitude: farmForm.longitude ? parseFloat(farmForm.longitude) : null
+      };
+
+      // Create farm via FastAPI endpoint
+      const response = await fetch('http://127.0.0.1:8000/farms/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(farmPayload)
       });
 
+      const resData = await response.json();
+
+      let createdFarmObj = null;
+      if (resData?.success && resData?.farm) {
+        createdFarmObj = Array.isArray(resData.farm) ? resData.farm[0] : resData.farm;
+      }
+
+      if (!createdFarmObj) {
+        // Fallback to Supabase farm service
+        createdFarmObj = await createFarm({
+          userId: user.id,
+          farmName: farmForm.farmName,
+          state: farmForm.state,
+          district: farmForm.district,
+          village: farmForm.village,
+          areaAcres: farmForm.areaAcres,
+          latitude: farmForm.latitude,
+          longitude: farmForm.longitude
+        });
+      }
+
       setFarms((previous) => [
-        newFarm,
+        createdFarmObj,
         ...previous
       ]);
 
@@ -321,10 +353,10 @@ export default function FarmManagement() {
         longitude: ''
       });
 
-      setActiveFarmId(newFarm.id);
-      setSelectedFarm(newFarm);
+      setActiveFarmId(createdFarmObj.id || createdFarmObj.farm_name);
+      setSelectedFarm(createdFarmObj);
       setSuccess('Farm added successfully.');
-      setActionNotice(`✅ Added farm "${newFarm.farm_name}" successfully!`);
+      setActionNotice(`✅ Added farm "${createdFarmObj.farm_name}" successfully!`);
       setTimeout(() => setActionNotice(''), 5000);
 
     } catch (err) {

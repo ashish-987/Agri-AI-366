@@ -8,3 +8,4 @@ dist-ssr
 .env.*.local
 .vscode
 .idea
+.venv
