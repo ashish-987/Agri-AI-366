@@ -1,26 +1,26 @@
-import { supabase } from '../lib/supabase';
+const API_URL = 'http://127.0.0.1:8000';
 
+// GET MY FARMS
 export async function getMyFarms(userId) {
   if (!userId) {
     throw new Error('User is not logged in.');
   }
 
-  const { data, error } = await supabase
-    .from('farms')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', {
-      ascending: false
-    });
+  const response = await fetch(
+    `${API_URL}/farms/${userId}`
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to fetch farms');
   }
 
-  return data || [];
+  return result.farms || [];
 }
 
 
+// CREATE FARM
 export async function createFarm({
   userId,
   farmName,
@@ -39,76 +39,80 @@ export async function createFarm({
     throw new Error('Farm name is required.');
   }
 
-  const { data, error } = await supabase
-    .from('farms')
-    .insert({
+  const response = await fetch(`${API_URL}/farms/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
       user_id: userId,
       farm_name: farmName.trim(),
       state: state?.trim() || null,
       district: district?.trim() || null,
       village: village?.trim() || null,
       area_acres:
-        areaAcres === ''
-          ? null
-          : Number(areaAcres),
+        areaAcres === '' ? null : Number(areaAcres),
       latitude:
-        latitude === ''
-          ? null
-          : Number(latitude),
+        latitude === '' ? null : Number(latitude),
       longitude:
-        longitude === ''
-          ? null
-          : Number(longitude)
+        longitude === '' ? null : Number(longitude)
     })
-    .select()
-    .single();
+  });
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to create farm');
   }
 
-  return data;
+  return result.farm?.[0] || result.farm;
 }
 
 
-export async function updateFarm(
-  farmId,
-  updates
-) {
+// UPDATE FARM
+export async function updateFarm(farmId, updates) {
   if (!farmId) {
     throw new Error('Farm ID is required.');
   }
 
-  const { data, error } = await supabase
-    .from('farms')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', farmId)
-    .select()
-    .single();
+  const response = await fetch(
+    `${API_URL}/farms/${farmId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    }
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to update farm');
   }
 
-  return data;
+  return result.farm?.[0] || result.farm;
 }
 
 
+// DELETE FARM
 export async function deleteFarm(farmId) {
   if (!farmId) {
     throw new Error('Farm ID is required.');
   }
 
-  const { error } = await supabase
-    .from('farms')
-    .delete()
-    .eq('id', farmId);
+  const response = await fetch(
+    `${API_URL}/farms/${farmId}`,
+    {
+      method: 'DELETE'
+    }
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to delete farm');
   }
 
   return true;

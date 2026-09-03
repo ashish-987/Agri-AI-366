@@ -99,3 +99,45 @@ def delete_crop(crop_id: str):
             status_code=500,
             detail=str(e)
         )
+
+
+class CropUpdateRequest(BaseModel):
+    field_id: Optional[str] = None
+    crop_name: Optional[str] = None
+    variety: Optional[str] = None
+    sowing_date: Optional[str] = None
+    expected_harvest_date: Optional[str] = None
+    growth_stage: Optional[str] = None
+    season: Optional[str] = None
+
+
+@router.put("/{crop_id}")
+def update_crop(crop_id: str, crop: CropUpdateRequest):
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase credentials missing in backend/.env"
+        )
+
+    try:
+        update_data = {k: v for k, v in crop.model_dump().items() if v is not None}
+        result = (
+            supabase
+            .table("crops")
+            .update(update_data)
+            .eq("id", crop_id)
+            .execute()
+        )
+
+        return {
+            "success": True,
+            "message": "Crop updated successfully",
+            "crop": result.data
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+

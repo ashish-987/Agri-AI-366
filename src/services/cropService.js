@@ -1,36 +1,24 @@
-import { supabase } from '../lib/supabase';
+const API_URL = 'http://127.0.0.1:8000';
 
-
-// ==========================================
 // GET CROPS FOR A FIELD
-// ==========================================
-
 export async function getCrops(fieldId) {
+  if (!fieldId) throw new Error('Field ID is required.');
 
-  if (!fieldId) {
-    throw new Error('Field ID is required.');
+  const response = await fetch(
+    `${API_URL}/crops/field/${fieldId}`
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to fetch crops');
   }
 
-  const { data, error } = await supabase
-    .from('crops')
-    .select('*')
-    .eq('field_id', fieldId)
-    .order('created_at', {
-      ascending: false
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  return data || [];
+  return result.crops || [];
 }
 
 
-// ==========================================
 // CREATE CROP
-// ==========================================
-
 export async function createCrop({
   fieldId,
   cropName,
@@ -40,99 +28,73 @@ export async function createCrop({
   growthStage,
   season
 }) {
+  if (!fieldId) throw new Error('Field ID is required.');
+  if (!cropName?.trim()) throw new Error('Crop name is required.');
 
-  if (!fieldId) {
-    throw new Error('Field ID is required.');
-  }
-
-  if (!cropName?.trim()) {
-    throw new Error('Crop name is required.');
-  }
-
-  const { data, error } = await supabase
-    .from('crops')
-    .insert({
+  const response = await fetch(`${API_URL}/crops/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
       field_id: fieldId,
-
-      crop_name:
-        cropName.trim(),
-
-      variety:
-        variety?.trim() || null,
-
-      sowing_date:
-        sowingDate || null,
-
-      expected_harvest_date:
-        expectedHarvestDate || null,
-
-      growth_stage:
-        growthStage?.trim() || null,
-
-      season:
-        season?.trim() || null
+      crop_name: cropName.trim(),
+      variety: variety?.trim() || null,
+      sowing_date: sowingDate || null,
+      expected_harvest_date: expectedHarvestDate || null,
+      growth_stage: growthStage?.trim() || null,
+      season: season?.trim() || null
     })
-    .select()
-    .single();
+  });
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to create crop');
   }
 
-  return data;
+  return result.crop?.[0] || result.crop;
 }
 
 
-// ==========================================
-// UPDATE CROP
-// ==========================================
-
-export async function updateCrop(
-  cropId,
-  updates
-) {
-
-  if (!cropId) {
-    throw new Error('Crop ID is required.');
-  }
-
-  const { data, error } = await supabase
-    .from('crops')
-    .update({
-      ...updates,
-      updated_at:
-        new Date().toISOString()
-    })
-    .eq('id', cropId)
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-
-// ==========================================
 // DELETE CROP
-// ==========================================
-
 export async function deleteCrop(cropId) {
+  if (!cropId) throw new Error('Crop ID is required.');
 
-  if (!cropId) {
-    throw new Error('Crop ID is required.');
-  }
+  const response = await fetch(
+    `${API_URL}/crops/${cropId}`,
+    {
+      method: 'DELETE'
+    }
+  );
 
-  const { error } = await supabase
-    .from('crops')
-    .delete()
-    .eq('id', cropId);
+  const result = await response.json();
 
-  if (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to delete crop');
   }
 
   return true;
+}
+
+
+// UPDATE CROP
+export async function updateCrop(cropId, updates) {
+  if (!cropId) throw new Error('Crop ID is required.');
+
+  const response = await fetch(`${API_URL}/crops/${cropId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updates)
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || 'Failed to update crop');
+  }
+
+  return result.crop?.[0] || result.crop;
 }

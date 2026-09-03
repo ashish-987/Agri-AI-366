@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+const API_URL = 'http://127.0.0.1:8000';
 
 
 // ==========================================
@@ -6,24 +6,23 @@ import { supabase } from '../lib/supabase';
 // ==========================================
 
 export async function getSoilRecords(fieldId) {
-
   if (!fieldId) {
     throw new Error('Field ID is required.');
   }
 
-  const { data, error } = await supabase
-    .from('soil_records')
-    .select('*')
-    .eq('field_id', fieldId)
-    .order('test_date', {
-      ascending: false
-    });
+  const response = await fetch(
+    `${API_URL}/soil/field/${fieldId}`
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.detail || 'Failed to fetch soil records.'
+    );
   }
 
-  return data || [];
+  return result.soil_records || [];
 }
 
 
@@ -42,61 +41,43 @@ export async function createSoilRecord({
   source,
   testDate
 }) {
-
   if (!fieldId) {
     throw new Error('Field ID is required.');
   }
 
-  const { data, error } = await supabase
-    .from('soil_records')
-    .insert({
+  const response = await fetch(`${API_URL}/soil/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
       field_id: fieldId,
-
-      ph:
-        ph === ''
-          ? null
-          : Number(ph),
-
-      nitrogen:
-        nitrogen === ''
-          ? null
-          : Number(nitrogen),
-
-      phosphorus:
-        phosphorus === ''
-          ? null
-          : Number(phosphorus),
-
-      potassium:
-        potassium === ''
-          ? null
-          : Number(potassium),
-
+      ph: ph === '' ? null : Number(ph),
+      nitrogen: nitrogen === '' ? null : Number(nitrogen),
+      phosphorus: phosphorus === '' ? null : Number(phosphorus),
+      potassium: potassium === '' ? null : Number(potassium),
       organic_carbon:
         organicCarbon === ''
           ? null
           : Number(organicCarbon),
-
       moisture:
         moisture === ''
           ? null
           : Number(moisture),
-
-      source:
-        source?.trim() ||
-        'user_input',
-
-      test_date:
-        testDate || null
+      source: source?.trim() || 'user_input',
+      test_date: testDate || null
     })
-    .select()
-    .single();
+  });
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.detail || 'Failed to create soil record.'
+    );
   }
 
-  return data;
+  return result.soil_record?.[0] || result.soil_record;
 }
 
 
@@ -108,25 +89,30 @@ export async function updateSoilRecord(
   recordId,
   updates
 ) {
-
   if (!recordId) {
+    throw new Error('Soil record ID is required.');
+  }
+
+  const response = await fetch(
+    `${API_URL}/soil/${recordId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
     throw new Error(
-      'Soil record ID is required.'
+      result.detail || 'Failed to update soil record.'
     );
   }
 
-  const { data, error } = await supabase
-    .from('soil_records')
-    .update(updates)
-    .eq('id', recordId)
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return result.soil_record?.[0] || result.soil_record;
 }
 
 
@@ -134,23 +120,29 @@ export async function updateSoilRecord(
 // DELETE SOIL RECORD
 // ==========================================
 
-export async function deleteSoilRecord(
-  recordId
-) {
-
+export async function deleteSoilRecord(recordId) {
   if (!recordId) {
     throw new Error(
       'Soil record ID is required.'
     );
   }
 
-  const { error } = await supabase
-    .from('soil_records')
-    .delete()
-    .eq('id', recordId);
+  const response = await fetch(
+    `${API_URL}/soil/${recordId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.detail || 'Failed to delete soil record.'
+    );
   }
 
   return true;

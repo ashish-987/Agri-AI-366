@@ -899,44 +899,45 @@ export default function FarmManagement() {
       setError('');
       setSuccess('');
 
-      const updatedSoil = await updateSoilRecord(
-        editingSoil.id,
-        {
-          ph:
-            editSoilForm.ph === ''
-              ? null
-              : Number(editSoilForm.ph),
-          nitrogen:
-            editSoilForm.nitrogen === ''
-              ? null
-              : Number(editSoilForm.nitrogen),
-          phosphorus:
-            editSoilForm.phosphorus === ''
-              ? null
-              : Number(editSoilForm.phosphorus),
-          potassium:
-            editSoilForm.potassium === ''
-              ? null
-              : Number(editSoilForm.potassium),
-          organic_carbon:
-            editSoilForm.organicCarbon === ''
-              ? null
-              : Number(editSoilForm.organicCarbon),
-          moisture:
-            editSoilForm.moisture === ''
-              ? null
-              : Number(editSoilForm.moisture),
-          source:
-            editSoilForm.source || 'user_input',
-          test_date:
-            editSoilForm.testDate || null
-        }
-      );
+      const payload = {
+        field_id: editingSoil.field_id || selectedField?.id,
+        ph:
+          editSoilForm.ph === ''
+            ? null
+            : Number(editSoilForm.ph),
+        nitrogen:
+          editSoilForm.nitrogen === ''
+            ? null
+            : Number(editSoilForm.nitrogen),
+        phosphorus:
+          editSoilForm.phosphorus === ''
+            ? null
+            : Number(editSoilForm.phosphorus),
+        potassium:
+          editSoilForm.potassium === ''
+            ? null
+            : Number(editSoilForm.potassium),
+        organic_carbon:
+          editSoilForm.organicCarbon === ''
+            ? null
+            : Number(editSoilForm.organicCarbon),
+        moisture:
+          editSoilForm.moisture === ''
+            ? null
+            : Number(editSoilForm.moisture),
+        source:
+          editSoilForm.source || 'user_input',
+        test_date:
+          editSoilForm.testDate || null
+      };
+
+      const updatedRes = await updateSoilRecord(editingSoil.id, payload);
+      const updatedItem = Array.isArray(updatedRes) ? updatedRes[0] : updatedRes;
 
       setSoilRecords((previous) =>
         previous.map((soil) =>
-          soil.id === updatedSoil.id
-            ? updatedSoil
+          soil.id === editingSoil.id
+            ? { ...soil, ...payload, ...(updatedItem || {}) }
             : soil
         )
       );
@@ -948,7 +949,7 @@ export default function FarmManagement() {
       setTimeout(() => setActionNotice(''), 5000);
 
     } catch (err) {
-      console.error(err);
+      console.error('Update soil error:', err);
       setError(
         err?.message || 'Unable to update soil record.'
       );
@@ -2533,6 +2534,13 @@ export default function FarmManagement() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {error && (
+              <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-semibold">
               <div>

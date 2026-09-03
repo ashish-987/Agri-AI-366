@@ -166,3 +166,42 @@ def delete_soil_record(record_id: str):
             status_code=500,
             detail=str(e)
         )
+
+
+class SoilUpdateRequest(BaseModel):
+    field_id: Optional[str] = None
+    ph: Optional[float] = None
+    nitrogen: Optional[float] = None
+    phosphorus: Optional[float] = None
+    potassium: Optional[float] = None
+    organic_carbon: Optional[float] = None
+    moisture: Optional[float] = None
+    source: Optional[str] = None
+    test_date: Optional[str] = None
+
+
+@router.put("/{record_id}")
+def update_soil_record(record_id: str, record: SoilUpdateRequest):
+    try:
+        update_data = {k: v for k, v in record.model_dump().items() if v is not None}
+        result = (
+            supabase
+            .table("soil_records")
+            .update(update_data)
+            .eq("id", record_id)
+            .execute()
+        )
+
+        return {
+            "success": True,
+            "message": "Soil record updated successfully",
+            "soil_record": result.data
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+

@@ -72,8 +72,19 @@ def get_farms(user_id: str):
         )
 
 
+class FarmUpdateRequest(BaseModel):
+    user_id: Optional[str] = None
+    farm_name: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    village: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    area_acres: Optional[float] = None
+
+
 @router.put("/{farm_id}")
-def update_farm(farm_id: str, farm: FarmCreate):
+def update_farm(farm_id: str, farm: FarmUpdateRequest):
     if not supabase:
         raise HTTPException(
             status_code=500,
@@ -81,10 +92,11 @@ def update_farm(farm_id: str, farm: FarmCreate):
         )
 
     try:
+        update_data = {k: v for k, v in farm.model_dump().items() if v is not None}
         result = (
             supabase
             .table("farms")
-            .update(farm.model_dump())
+            .update(update_data)
             .eq("id", farm_id)
             .execute()
         )
