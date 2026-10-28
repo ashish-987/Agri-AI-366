@@ -195,8 +195,8 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
 
   return (
     <>
-      {/* DESKTOP SIDEBAR (STICKY ON LEFT) */}
-      <aside className="hidden lg:block w-64 bg-white border-r border-emerald-100 p-4 h-screen sticky top-0 z-30 shadow-sm flex-none">
+      {/* DESKTOP SIDEBAR (FIXED ON LEFT) */}
+      <aside className="hidden lg:block fixed top-0 left-0 w-64 bg-white border-r border-emerald-100 p-4 h-screen z-30 shadow-sm">
         {sidebarContent}
       </aside>
 

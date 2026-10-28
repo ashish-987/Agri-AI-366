@@ -157,7 +157,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex overflow-x-hidden selection:bg-[#10b981] selection:text-white bg-[#f8fafc]">
+    <div className="relative min-h-screen w-full flex selection:bg-[#10b981] selection:text-white bg-[#f8fafc]">
 
       {/* Background */}
       <div className="fixed inset-0 z-0 opacity-15 pointer-events-none w-full h-full">
@@ -185,7 +185,7 @@ export default function App() {
       )}
 
       {/* Main */}
-      <div className="relative z-10 flex-1 flex flex-col justify-between min-w-0 min-h-screen">
+      <div className={`relative z-10 flex-1 flex flex-col justify-between min-w-0 min-h-screen ${isLoggedIn ? 'lg:pl-64' : ''}`}>
 
         <Navbar
           activeTab={activeTab}
