@@ -151,20 +151,47 @@ export default function Sidebar({ activeTab, setActiveTab, isLoggedIn, user, onO
         {isLoggedIn ? (
           <div className="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100/80 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-[#006c49] text-white flex items-center justify-center font-bold text-xs shadow-sm flex-none">
-                  {user?.full_name ? user.full_name[0].toUpperCase() : 'F'}
+              {/* CLICKABLE PROFILE INFO CARD */}
+              <button 
+                onClick={() => {
+                  setActiveTab('settings');
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-85 transition-opacity flex-1 cursor-pointer group"
+                title="Open Profile Settings"
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user?.name || "Farmer"}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-[#006c49] flex-none group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#006c49] text-white flex items-center justify-center font-black text-xs shadow-sm flex-none group-hover:scale-105 transition-transform">
+                    {(user?.name || user?.full_name || 'A')[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-black text-[#002117] truncate group-hover:text-[#006c49] transition-colors">
+                    {user?.name || user?.full_name || 'Ashish'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-semibold truncate">
+                    {user?.district ? `${user.district}${user?.state ? ', ' + user.state : ''}` : user?.village || 'Verified Farmer'}
+                  </p>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-black text-[#002117] truncate">{user?.full_name || 'Farmer'}</p>
-                  <p className="text-[10px] text-slate-500 font-semibold truncate">{user?.district || user?.role || 'Farmer'}</p>
-                </div>
-              </div>
+              </button>
 
               <button 
-                onClick={() => setActiveTab('settings')}
-                className={`p-1.5 rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-[#006c49] text-white' : 'text-slate-500 hover:bg-emerald-100 hover:text-[#006c49]'}`}
-                title="Settings"
+                onClick={() => {
+                  setActiveTab('settings');
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className={`p-1.5 rounded-xl transition-colors ml-1 cursor-pointer ${
+                  activeTab === 'settings' 
+                    ? 'bg-[#006c49] text-white shadow-sm' 
+                    : 'text-slate-500 hover:bg-emerald-100 hover:text-[#006c49]'
+                }`}
+                title="Account Settings"
               >
                 <Settings className="w-4 h-4" />
               </button>

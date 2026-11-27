@@ -21,6 +21,13 @@
 - [Technology Stack](#-technology-stack)
 - [Database Schema & ER Architecture](#-database-schema--er-architecture)
 - [Project Directory Structure](#-project-directory-structure)
+- [Computer Science Concepts Applied](#-computer-science-concepts-applied)
+  - [A. Cyber Security Implementation](#a-cyber-security-implementation)
+  - [B. System Design and Architecture](#b-system-design-and-architecture)
+  - [C. DBMS Concepts Applied](#c-dbms-concepts-applied)
+  - [D. Software Engineering Principles](#d-software-engineering-principles)
+  - [E. Computer Science Concepts Implementation Mapping](#e-computer-science-concepts-implementation-mapping)
+  - [F. Real-World End-to-End Data Flow Tracing](#f-real-world-end-to-end-data-flow-tracing)
 - [Step-by-Step Installation & Local Setup](#-step-by-step-installation--local-setup)
   - [Prerequisites](#prerequisites)
   - [Step 1: Clone Repository](#step-1-clone-repository)
@@ -408,6 +415,560 @@ Agri-AI-366/
 ├── tailwind.config.js              # Tailwind design tokens
 └── vite.config.js                  # Vite bundler configuration
 ```
+
+---
+
+## 🧠 Computer Science Concepts Applied
+
+This section details how core theoretical Computer Science disciplines—**Cybersecurity**, **System Design & Distributed Systems**, **Database Management Systems (DBMS)**, and **Software Engineering**—are practically implemented across the AgriAI 366 codebase.
+
+---
+
+### A. Cyber Security Implementation
+
+The platform employs defense-in-depth principles across the presentation, logic, and persistence tiers.
+
+```
++-------------------------------------------------------------------------------------------------------+
+|                                    CYBERSECURITY ARCHITECTURE                                         |
++------------------------------------+----------------------------------+-------------------------------+
+|       CLIENT BROWSER LAYER         |       API GATEWAY / LOGIC        |     DATABASE PERSISTENCE      |
+|  • JWT Bearer Token in Storage     |  • FastAPI CORS Whitelisting     |  • Row-Level Security (RLS)   |
+|  • Public Anon Key (Bounded Scope) |  • Pydantic Strict Type Checking |  • DB Triggers (Auth -> User) |
+|  • Client-Side Validation Guard    |  • Isolated Service Role Secret  |  • Foreign Key Cascade Bounds |
++------------------------------------+----------------------------------+-------------------------------+
+```
+
+#### 1. Authentication and Authorization
+- **Conceptual Definition:** *Authentication* verifies identity claims (determining "who the user is"), while *Authorization* establishes resource access entitlements (determining "what the authenticated identity is permitted to perform").
+- **Where Used in Project:** User authentication entrypoints in [`src/lib/supabaseAuth.js`](src/lib/supabaseAuth.js), global state synchronization in [`src/context/AuthContext.jsx`](src/context/AuthContext.jsx), and database-level enforcement in [`supabase_schema.sql`](supabase_schema.sql).
+- **Implementation Mechanics:** Farmers authenticate via email/password credentials or third-party OAuth through Supabase GoTrue Auth (`supabase.auth.signInWithPassword` or `signUpWithEmail`). Upon verification, the identity provider returns a cryptographically signed JSON Web Token (JWT) encapsulating standard user claims (including `sub`, representing the farmer's unique UUID). The client session is preserved and rehydrated via `supabase.auth.getSession()` and `supabase.auth.onAuthStateChange()`.
+- **Vulnerability Prevented:** Prevents Broken Authentication (OWASP A07), credential sniffing, unauthorized impersonation, and identity spoofing across application sessions.
+
+#### 2. JSON Web Token (JWT) Stateless Session Management
+- **Conceptual Definition:** JWT (RFC 7519) is an open industry standard that defines a compact, self-contained mechanism for securely transmitting information between parties as a verifiable JSON object.
+- **Where Used in Project:** [`src/context/AuthContext.jsx`](src/context/AuthContext.jsx), [`src/lib/supabase.js`](src/lib/supabase.js), and database query authorization.
+- **Implementation Mechanics:** Rather than storing stateful session IDs in server memory tables or cache clusters, authentication state is represented as a signed JWT bearer token. On every direct database request executed via `@supabase/supabase-js`, the client injects the token in the HTTP `Authorization: Bearer <TOKEN>` header. PostgreSQL decodes the token payload to extract `auth.uid()`, binding query evaluation to the caller's identity without persistent server-side session overhead.
+- **Vulnerability Prevented:** Eliminates session hijacking via session prediction, memory exhaustion attacks on session state caches, and session fixation vulnerabilities.
+
+#### 3. Row Level Security (RLS) and Tenant Data Isolation
+- **Conceptual Definition:** Row Level Security is an access control mechanism implemented directly within the database engine where individual row access is determined by evaluating boolean predicate security policies during SQL query execution.
+- **Where Used in Project:** Enforced across all relational tables in [`supabase_schema.sql`](supabase_schema.sql), specifically `profiles`, `farms`, `fields`, `crops`, `soil_records`, `disease_scans`, `marketplace_products`, and `equipment_rentals`.
+- **Implementation Mechanics:** RLS is explicitly activated on tables via `ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;`. Policies bind data mutations and reads to the token identity:
+  ```sql
+  -- Example from supabase_schema.sql
+  CREATE POLICY "Users can view their own farms"
+      ON public.farms FOR SELECT USING (auth.uid() = user_id);
+
+  CREATE POLICY "Users can insert their own farms"
+      ON public.farms FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+  CREATE POLICY "Users can update their own farms"
+      ON public.farms FOR UPDATE USING (auth.uid() = user_id);
+
+  CREATE POLICY "Users can delete their own farms"
+      ON public.farms FOR DELETE USING (auth.uid() = user_id);
+  ```
+  Even if a malicious user alters client parameters to request `SELECT * FROM farms WHERE id = 'target-id'`, PostgreSQL executes the query through the filter `AND user_id = auth.uid()`. Unowned rows are completely invisible.
+- **Vulnerability Prevented:** Mitigates Broken Object Level Authorization (BOLA / IDOR - Insecure Direct Object References) and cross-tenant data leakage in multi-user deployments.
+
+#### 4. Role and Ownership-Based Access Control (OBAC)
+- **Conceptual Definition:** Ownership-Based Access Control restricts mutation (update, delete) and sensitive viewing permissions strictly to the authenticated entity that created the asset, while allowing broader public read visibility for shared resources.
+- **Where Used in Project:** Public marketplace and community forum tables in [`supabase_schema.sql`](supabase_schema.sql).
+- **Implementation Mechanics:** The schema implements differentiated access policies on `marketplace_products`, `equipment_rentals`, and `forum_posts`:
+  - **Public Read (Catalog Access):** `FOR SELECT USING (true)` enables all users (including unauthenticated visitors) to browse mandi grain prices and available tractor rentals.
+  - **Owner-Exclusive Mutation:** `FOR UPDATE USING (auth.uid() = user_id)` and `FOR DELETE USING (auth.uid() = user_id)` ensure that only the selling farmer who originally listed the item can edit its price, update stock quantity, or delete the listing.
+- **Vulnerability Prevented:** Prevents unauthorized tampering, price manipulation, and malicious deletion of marketplace listings by competitor users (Privilege Escalation - OWASP A01).
+
+#### 5. Credential Segregation and Environment Variable Security
+- **Conceptual Definition:** Principle of least privilege applied to secret management, ensuring sensitive administrative credentials are never distributed to client runtimes or committed into version control systems.
+- **Where Used in Project:** Root [`.env`](.env), frontend environment [`.env.local`](.env.local), [`.gitignore`](.gitignore), [`backend/.env`](backend/.env), [`src/lib/supabase.js`](src/lib/supabase.js), and [`backend/supabase_client.py`](backend/supabase_client.py).
+- **Implementation Mechanics:**
+  - **Client Runtime:** Exposed frontend variables are constrained to public variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`). The public publishable key possesses strictly bounded permissions governed by RLS.
+  - **Server Runtime:** The high-privilege `SUPABASE_SECRET_KEY` (service role) is isolated inside `backend/.env`. It is loaded only on the server through `python-dotenv` and is explicitly listed in `backend/.gitignore` to prevent leakage into Git repositories.
+- **Vulnerability Prevented:** Prevents credential exposure, source code secret leakage, and administrative database compromise.
+
+#### 6. Backend Input Validation and Schema Enforcement via Pydantic
+- **Conceptual Definition:** Strict server-side data boundary validation ensuring all inbound data conforms to declared data types, structural constraints, and ranges prior to execution within application business logic.
+- **Where Used in Project:** REST endpoints in [`backend/routes/farms.py`](backend/routes/farms.py), [`backend/routes/fields.py`](backend/routes/fields.py), [`backend/routes/crops.py`](backend/routes/crops.py), [`backend/routes/soil.py`](backend/routes/soil.py), and [`backend/models/schemas.py`](backend/models/schemas.py).
+- **Implementation Mechanics:** FastAPI integrates Pydantic v2 schemas (`FarmCreate`, `FieldCreate`, `CropCreate`, `SoilAnalyzeRequest`). Every incoming JSON payload is validated at the ASGI boundary:
+  ```python
+  class SoilAnalyzeRequest(BaseModel):
+      field_id: str
+      ph: float
+      nitrogen: float
+      phosphorus: float
+      potassium: float
+      organic_carbon: float
+      moisture: float
+      source: Optional[str] = "manual"
+      test_date: Optional[str] = None
+  ```
+  If an invalid data type (such as passing a string into `ph` or missing required coordinate fields) is submitted, FastAPI rejects the request with an immediate HTTP 422 Unprocessable Entity, short-circuiting execution before database interaction.
+- **Vulnerability Prevented:** Protects against type confusion, format string bugs, malformed JSON injection, and unexpected runtime server crashes.
+
+#### 7. Cross-Origin Resource Sharing (CORS) Policy
+- **Conceptual Definition:** A security standard implemented by web browsers that restricts cross-origin HTTP requests originating from client scripts to origins explicitly permitted by the receiving server.
+- **Where Used in Project:** Server configuration in [`backend/main.py`](backend/main.py).
+- **Implementation Mechanics:** FastAPI's `CORSMiddleware` explicitly defines allowed origins:
+  ```python
+  app.add_middleware(
+      CORSMiddleware,
+      allow_origins=[
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "https://agri-ai-366.netlify.app",
+      ],
+      allow_credentials=True,
+      allow_methods=["*"],
+      allow_headers=["*"],
+  )
+  ```
+- **Vulnerability Prevented:** Mitigates Cross-Site Request Forgery (CSRF) vectors and blocks arbitrary third-party websites from executing unauthorized background requests against local or production backend APIs.
+
+> [!NOTE]
+> **Security Audit Scope & Boundary Verification:** The project uses managed HTTPS/TLS via Supabase and modern cloud hosting for transport security, along with parameterized database queries via Supabase client libraries (mitigating standard SQL injection). Production-grade features such as Web Application Firewalls (WAF), distributed rate limiting (e.g., Redis token bucket), and field-level encryption at rest are outside the current academic deployment scope.
+
+---
+
+### B. System Design and Architecture
+
+AgriAI 366 adheres to a classic **Three-Tier Architecture** implemented across modern, decoupled components.
+
+```mermaid
+flowchart TD
+    subgraph ClientTier ["Presentation Tier (Client Layer)"]
+        UI["React 18 Single Page Application (Vite :3000)"]
+        AuthContext["AuthContext (Session & Profile State)"]
+        APIService["Frontend API Services (src/services/)"]
+        SupabaseClient["Supabase JS Client SDK"]
+        UI --> AuthContext
+        UI --> APIService
+        UI --> SupabaseClient
+    end
+
+    subgraph LogicTier ["Application & Business Logic Tier (FastAPI :8000)"]
+        FastAPIApp["FastAPI REST Gateway (backend/main.py)"]
+        PydanticModels["Pydantic Validation Models (routes/*.py)"]
+        
+        subgraph ModularServices ["Domain Services Layer"]
+            SoilService["Soil AI & Health Scorer (services/soil_ai.py)"]
+            FertilizerService["NPK Fertilizer Engine (services/fertilizer_service.py)"]
+            WeatherService["Weather & Agro Advisory (services/weather_service.py)"]
+        end
+
+        FastAPIApp --> PydanticModels
+        FastAPIApp --> SoilService
+        FastAPIApp --> FertilizerService
+        FastAPIApp --> WeatherService
+    end
+
+    subgraph DataTier ["Data Persistence Tier (Supabase Cloud)"]
+        AuthService["Supabase Auth (GoTrue JWT Engine)"]
+        PostgreSQL[("PostgreSQL 15 Relational Engine")]
+        RLSEngine{"Row Level Security (RLS) Filter"}
+        DBTriggers["PL/pgSQL Triggers (handle_new_user)"]
+
+        AuthService --> DBTriggers
+        DBTriggers --> PostgreSQL
+        RLSEngine --> PostgreSQL
+    end
+
+    subgraph ExternalTier ["External Service Integrations"]
+        OpenMeteo["Open-Meteo Meteorological API"]
+    end
+
+    AuthContext <-->|1. HTTPS / JWT Auth State| AuthService
+    SupabaseClient <-->|2. HTTPS / Direct Queries with JWT| RLSEngine
+    APIService <-->|3. HTTP REST / JSON Payloads| FastAPIApp
+    LogicTier <-->|4. Python Supabase SDK / Database CRUD| PostgreSQL
+    WeatherService <-->|5. Async HTTPX / Geo-Coordinates| OpenMeteo
+```
+
+#### 1. Three-Tier Architectural Decomposition
+
+1. **Presentation Tier (Client Layer):**
+   - Implemented as a single-page application (SPA) using React 18, bundled with Vite, and rendered with Tailwind CSS.
+   - Responsible strictly for user interaction, visual rendering, charting (Chart.js), client-side state caching, and responsive design.
+   - Completely decoupled from database drivers and operating system primitives; communicates exclusively over HTTPS/REST.
+
+2. **Application & Business Logic Tier (FastAPI Layer):**
+   - Implemented using Python 3.11 and FastAPI over an asynchronous Uvicorn ASGI server.
+   - Encapsulates pure domain logic and scientific calculations:
+     - Soil health evaluation algorithm (0–100 scoring based on non-linear agronomic thresholds in [`backend/services/soil_ai.py`](backend/services/soil_ai.py)).
+     - Fertilizer deficit balancing formulas (Urea, DAP, and MOP dosage calculators in [`backend/services/fertilizer_service.py`](backend/services/fertilizer_service.py)).
+     - Agro-meteorological advisory rules derived from weather parameters ([`backend/services/advisory_service.py`](backend/services/advisory_service.py)).
+   - Exposes RESTful endpoints conforming to the OpenAPI / Swagger specification.
+
+3. **Data Persistence Tier (Supabase / PostgreSQL Layer):**
+   - Managed PostgreSQL 15 database handling relational tables, foreign key constraints, and multi-tenant isolation.
+   - Houses procedural database triggers (`handle_new_user()`) written in PL/pgSQL for automatic profile provisioning.
+
+#### 2. Architectural Design Patterns & Principles
+
+- **Client-Server Separation:** The client and server run on distinct ports (`3000` and `8000`) and can be hosted across completely separate infrastructure providers (e.g., Netlify for static frontend assets and Render for the Python API server).
+- **Separation of Concerns (SoC):**
+  - UI components in `src/pages/` do not perform raw HTTP fetching or SQL queries directly; they delegate to centralized services in `src/services/`.
+  - Backend routing controllers in `backend/routes/` do not execute mathematical formulas directly; they delegate to dedicated domain services in `backend/services/`.
+- **Stateless Backend Design:** The FastAPI server maintains zero in-memory session state between incoming requests. Each request carries its full context or delegates identity resolution to the database, enabling seamless horizontal scalability behind a load balancer.
+- **External Integration Pattern:** The weather subsystem decouples external dependencies via an asynchronous HTTP client (`httpx.AsyncClient` in [`backend/services/weather_service.py`](backend/services/weather_service.py)) targeting the Open-Meteo REST API. This shields core application logic from external API latency and contract changes.
+
+---
+
+### C. DBMS Concepts Applied
+
+The database tier is designed using relational principles implemented in PostgreSQL.
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ FARMS : "owns"
+    FARMS ||--o{ FIELDS : "divides into"
+    FIELDS ||--o{ CROPS : "contains"
+    FIELDS ||--o{ SOIL_RECORDS : "evaluated by"
+    PROFILES ||--o{ MARKETPLACE_PRODUCTS : "lists"
+    PROFILES ||--o{ EQUIPMENT_RENTALS : "leases"
+    PROFILES ||--o{ DISEASE_SCANS : "records"
+    PROFILES ||--o{ FORUM_POSTS : "authors"
+    FORUM_POSTS ||--o{ FORUM_COMMENTS : "has"
+    PROFILES ||--o{ EXPERT_CONSULTATIONS : "books"
+
+    PROFILES {
+        uuid id PK "FK to auth.users.id ON DELETE CASCADE"
+        text full_name
+        text email "UNIQUE"
+        text phone
+        text location
+        text state
+        text district
+        numeric total_area_acres
+        text plan_type "CHECK IN ('FREE', 'PRO', 'PREMIUM')"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    FARMS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text farm_name
+        text location
+        numeric area_acres "DEFAULT 1.0"
+        text crop_type
+        text soil_type
+        text irrigation_source
+        timestamp created_at
+    }
+
+    FIELDS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid farm_id FK "REFERENCES farms.id ON DELETE CASCADE"
+        text field_name
+        numeric area_acres
+        numeric latitude
+        numeric longitude
+        timestamp created_at
+    }
+
+    CROPS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid field_id FK "REFERENCES fields.id ON DELETE CASCADE"
+        text crop_name
+        text variety
+        date sowing_date
+        date expected_harvest_date
+        text growth_stage
+        text season
+        timestamp created_at
+    }
+
+    SOIL_RECORDS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid field_id FK "REFERENCES fields.id ON DELETE CASCADE"
+        numeric ph
+        numeric nitrogen
+        numeric phosphorus
+        numeric potassium
+        numeric organic_carbon
+        numeric moisture
+        text source "DEFAULT 'manual'"
+        date test_date "DEFAULT CURRENT_DATE"
+        timestamp created_at
+    }
+
+    MARKETPLACE_PRODUCTS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text title
+        text category
+        numeric price_per_unit
+        text unit "DEFAULT 'Quintal'"
+        numeric quantity_available
+        text location
+        text district
+        text seller_name
+        text contact_phone
+        text description
+        text status "CHECK IN ('ACTIVE', 'SOLD', 'INACTIVE')"
+        timestamp created_at
+    }
+
+    EQUIPMENT_RENTALS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text equipment_name
+        text category
+        numeric rate_per_hour
+        text location
+        text owner_name
+        text contact_phone
+        boolean is_available "DEFAULT true"
+        timestamp created_at
+    }
+
+    DISEASE_SCANS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text crop_name
+        text detected_disease
+        numeric confidence_score
+        text treatment_advice
+        text severity_level "DEFAULT 'Moderate'"
+        timestamp scanned_at
+    }
+
+    FORUM_POSTS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text title
+        text content
+        text category "DEFAULT 'General'"
+        text author_name
+        int likes_count "DEFAULT 0"
+        int comments_count "DEFAULT 0"
+        timestamp created_at
+    }
+
+    FORUM_COMMENTS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid post_id FK "REFERENCES forum_posts.id ON DELETE CASCADE"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text author_name
+        text content
+        timestamp created_at
+    }
+
+    EXPERT_CONSULTATIONS {
+        uuid id PK "DEFAULT uuid_generate_v4()"
+        uuid user_id FK "REFERENCES profiles.id ON DELETE CASCADE"
+        text expert_name
+        text specialization
+        timestamp booking_date
+        text status "CHECK IN ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED')"
+        text query_notes
+        timestamp created_at
+    }
+```
+
+#### 1. Entity-Relationship Modeling & Cardinality
+The database schema models physical agricultural structures into structured relational entities:
+- **One-to-Many ($1:N$) Hierarchical Agronomic Structure:**
+  - `profiles` $\rightarrow$ `farms`: A single farmer owns multiple distinct farms ($1:N$).
+  - `farms` $\rightarrow$ `fields`: A farm is partitioned into multiple physical plots or fields ($1:N$).
+  - `fields` $\rightarrow$ `crops`: A field can support multiple crop rotations or seasonal plantings ($1:N$).
+  - `fields` $\rightarrow$ `soil_records`: A field undergoes periodic soil testing over time ($1:N$).
+- **One-to-Many ($1:N$) Marketplace & Social Relations:**
+  - `profiles` $\rightarrow$ `marketplace_products`: A farmer lists multiple produce commodities for sale ($1:N$).
+  - `profiles` $\rightarrow$ `equipment_rentals`: A farmer leases multiple agricultural machinery assets ($1:N$).
+  - `forum_posts` $\rightarrow$ `forum_comments`: A community thread receives multiple farmer responses ($1:N$).
+
+#### 2. Primary Keys, Foreign Keys, and Referential Integrity
+- **Surrogate Keys using UUIDs:** All tables use universally unique identifiers (`UUID PRIMARY KEY DEFAULT uuid_generate_v4()`). This prevents key enumeration attacks and ensures collision-free distributed ID generation.
+- **Referential Integrity Constraints:** Foreign key references (`REFERENCES public.profiles(id)`) strictly enforce valid relational links between child and parent tables.
+- **Cascading Deletions:** All foreign key definitions specify `ON DELETE CASCADE`. If a user deletes their profile, PostgreSQL automatically deletes all linked farms, fields, crops, and listings in a single atomic database operation, preventing orphan records and dangling references.
+
+#### 3. Database Normalization Analysis
+The agricultural management subsystem is normalized up to **Third Normal Form (3NF)**:
+- **First Normal Form (1NF):**
+  - All attributes contain atomic, indivisible values (e.g., `ph`, `nitrogen`, `latitude`, `longitude` are distinct scalar values).
+  - No repeating groups or arrays are stored in multi-value table columns.
+  - Every table possesses an unambiguous primary key (`id`).
+- **Second Normal Form (2NF):**
+  - The schema satisfies 1NF.
+  - All tables use single-column primary keys (`UUID id`). Therefore, partial functional dependencies on composite candidate keys are mathematically impossible; all non-key attributes are fully functionally dependent on the primary key.
+- **Third Normal Form (3NF):**
+  - The schema satisfies 2NF.
+  - There are no transitive functional dependencies ($X \rightarrow Y$ and $Y \rightarrow Z$). For example, field acreage and GPS coordinates are stored in `fields`, while crop variety and sowing dates are stored in `crops`. Farmer metadata (phone, state, district) is stored solely in `profiles`, rather than duplicated across every farm, field, or crop row. This eliminates update anomalies and redundant data storage.
+
+#### 4. Domain Integrity Constraints & Data Validation
+PostgreSQL engine-level constraints guarantee that invalid data cannot be committed to disk:
+- **Domain Check Constraints:**
+  - `plan_type TEXT DEFAULT 'FREE' CHECK (plan_type IN ('FREE', 'PRO', 'PREMIUM'))`
+  - `status TEXT DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SOLD', 'INACTIVE'))`
+  - `status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'))`
+- **Mandatory Field Constraints:** `NOT NULL` constraints on crucial business fields (`full_name`, `email`, `farm_name`, `price_per_unit`).
+- **Uniqueness Constraints:** `email TEXT UNIQUE NOT NULL` on `profiles` preventing duplicate registrations.
+- **Precision Numeric Types:** Agricultural data utilizes exact fixed-point representation (`NUMERIC(8,2)` for acreage and `NUMERIC(10,2)` for financial prices) rather than imprecise IEEE floating-point types (`FLOAT`/`REAL`), preventing financial and volumetric rounding errors.
+
+#### 5. Event-Driven Database Triggers (PL/pgSQL)
+The database utilizes active database triggers to guarantee transaction atomicity between identity creation and relational profile provisioning:
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, full_name, email, phone, avatar_url, plan_type)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'Kisan Farmer'),
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+        COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'),
+        'FREE'
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
+- **How It Works:** Whenever a new user signs up in the `auth.users` authentication table, PostgreSQL fires `on_auth_user_created`, which invokes `handle_new_user()`.
+- **Why It Matters:** The trigger runs with `SECURITY DEFINER` privileges, automatically inserting the corresponding profile record into `public.profiles` with matching UUID. This guarantees that user profile creation is atomic, event-driven, and immune to client-side network interruptions during onboarding.
+
+---
+
+### D. Software Engineering Principles
+
+The codebase exhibits core software engineering best practices that ensure maintainability, testability, and clean code hygiene.
+
+```
+AgriAI-366/
+├── backend/                       # Logic & Application Tier
+│   ├── models/schemas.py          # Data contract models (Pydantic)
+│   ├── routes/                    # REST API route controllers
+│   ├── services/                  # Pure agronomic domain business logic
+│   └── database.py                # Database connection encapsulation
+└── src/                           # Presentation Tier
+    ├── components/                # Reusable UI component building blocks
+    ├── context/AuthContext.jsx    # Global state management via React Context API
+    ├── pages/                     # Routed page-level view components
+    ├── services/                  # Transport abstraction for backend communication
+    └── lib/                       # External SDK singleton initializations
+```
+
+#### 1. Modular Programming & High Cohesion / Low Coupling
+- **High Cohesion:** Each module has a focused, single responsibility. For instance, [`backend/services/soil_ai.py`](backend/services/soil_ai.py) only evaluates soil nutrient metrics; [`backend/services/weather_service.py`](backend/services/weather_service.py) handles weather data retrieval.
+- **Low Coupling:** Backend routing controllers (`backend/routes/farms.py`) do not contain raw SQL strings or tight algorithmic dependencies. They communicate through standard Python function interfaces and validated data models.
+
+#### 2. Separation of Concerns (SoC)
+The project strictly separates presentation, communication, business logic, and persistence:
+- **Presentation Layer:** React components in `src/pages/` (e.g., `SoilHealth.jsx`) only handle user input and DOM updates.
+- **Data Transport Layer:** Services in `src/services/` (e.g., `soilService.js`, `api.js`) isolate network calls, headers, and HTTP status handling from view code.
+- **Business Logic Layer:** Python services in `backend/services/` execute computational rules without depending on the web framework.
+- **Persistence Layer:** Database tables and RLS policies in `supabase_schema.sql` handle relational consistency and access rules independently of application code.
+
+#### 3. Component Reusability & DRY (Don't Repeat Yourself)
+- **UI Componentization:** Common interface elements are extracted into standalone, reusable components ([`src/components/Navbar.jsx`](src/components/Navbar.jsx), [`src/components/Sidebar.jsx`](src/components/Sidebar.jsx), [`src/components/Footer.jsx`](src/components/Footer.jsx), [`src/components/AuthModal.jsx`](src/components/AuthModal.jsx)).
+- **Centralized API Wrapper:** [`src/services/api.js`](src/services/api.js) encapsulates the generic `apiRequest()` helper, standardizing JSON header injection, URL concatenation, and HTTP error unwrapping across all frontend calls.
+
+#### 4. Defensive Programming & Graceful Error Handling
+- **Server Boundary Protection:** Backend endpoints wrap database operations in `try-except` blocks, catching unexpected exceptions and returning structured HTTP status codes (`HTTPException(status_code=500, detail=...)`) to prevent server process crashes.
+- **Client Offline Fallbacks:** [`src/lib/supabaseAuth.js`](src/lib/supabaseAuth.js) implements fallback mock profiles when running in test or demo environments where cloud credentials are intentionally unconfigured, allowing the frontend UI to remain functional for evaluation.
+
+#### 5. Configuration Management & Environment Segregation
+- System variables are decoupled from source code using `.env` files ([`.env.example`](.env.example), [`backend/.env`](backend/.env)).
+- Variables are read dynamically via standard interfaces (`os.getenv()` in Python, `import.meta.env` in Vite), ensuring identical codebase operation across local development, staging, and production environments without code modification.
+
+#### 6. API-First Contract Design
+- Request and response formats are formally specified via Pydantic models. This establishes an explicit contract between client and server, automatically powers FastAPI's interactive OpenAPI documentation (`/docs`), and eliminates data shape ambiguities during team collaboration.
+
+---
+
+### E. Computer Science Concepts Implementation Mapping
+
+The following mapping connects theoretical Computer Science concepts directly to verified source code implementations within this repository:
+
+| Computer Science Concept | Actual Implementation in Project | Relevant File or Component | Practical Benefit |
+|---|---|---|---|
+| **Identity Authentication** | Supabase GoTrue Auth issuing signed cryptographic JWT tokens on email/password login | [`src/lib/supabaseAuth.js`](src/lib/supabaseAuth.js), [`src/context/AuthContext.jsx`](src/context/AuthContext.jsx) | Prevents credential theft; provides stateless identity verification across web sessions. |
+| **Row Level Security (RLS)** | PostgreSQL engine-level row filtering using `auth.uid() = user_id` policies | [`supabase_schema.sql`](supabase_schema.sql) (Lines 28–188) | Prevents Broken Object Level Authorization (BOLA / IDOR) and cross-tenant farmer data leakage. |
+| **Ownership-Based Access Control** | Public SELECT policy paired with owner-only UPDATE/DELETE policies | [`supabase_schema.sql`](supabase_schema.sql) (`marketplace_products`) | Allows buyers to view produce while restricting edits and deletions strictly to the listing owner. |
+| **Data Boundary Validation** | Strict type and schema validation on incoming JSON payloads using Pydantic models | [`backend/routes/farms.py`](backend/routes/farms.py), [`backend/routes/soil.py`](backend/routes/soil.py) | Rejects malformed requests with HTTP 422 before logic executes; prevents type confusion bugs. |
+| **Cross-Origin Security (CORS)** | Whitelist-based origin filtering via FastAPI `CORSMiddleware` | [`backend/main.py`](backend/main.py) (Lines 25–35) | Blocks unauthorized cross-origin API calls and mitigates CSRF vectors from third-party sites. |
+| **Three-Tier Architecture** | Decoupled client (React :3000), logic (FastAPI :8000), and database (Supabase) | Project root, `backend/`, and Supabase Cloud | Enables independent scaling, clean maintenance, and isolated service deployments. |
+| **Separation of Concerns (SoC)** | Separation of UI views, network transport helpers, route controllers, and calculation services | [`src/services/`](src/services/), [`backend/routes/`](backend/routes/), [`backend/services/`](backend/services/) | Improves modularity and codebase testability; logic changes do not break presentation components. |
+| **External API Integration** | Asynchronous HTTP queries to the Open-Meteo REST API via `httpx.AsyncClient` | [`backend/services/weather_service.py`](backend/services/weather_service.py) | Provides real-time meteorological forecasts without blocking FastAPI worker threads. |
+| **Relational Database Design** | Relational schema modeling $1:N$ hierarchy from farmers to farms, fields, and crops | [`supabase_schema.sql`](supabase_schema.sql), `README.md` (Step 3) | Eliminates data anomalies; models real-world agricultural hierarchies accurately. |
+| **Referential Integrity** | Foreign key constraints with `ON DELETE CASCADE` across all child tables | [`supabase_schema.sql`](supabase_schema.sql) | Automatically cleans up dependent fields and crop records upon farm deletion; prevents orphan rows. |
+| **Schema Normalization (3NF)** | Non-redundant attribute assignment ensuring fields depend only on primary keys | [`supabase_schema.sql`](supabase_schema.sql) (`profiles`, `farms`, `fields`) | Minimizes storage duplication and prevents insertion, update, and deletion anomalies. |
+| **Domain Integrity Constraints** | Engine-level `CHECK`, `UNIQUE`, `NOT NULL`, and `NUMERIC(8,2)` constraints | [`supabase_schema.sql`](supabase_schema.sql) | Ensures stored values conform to valid business states directly at the database engine level. |
+| **Active Database Triggers** | `handle_new_user()` PL/pgSQL function triggered `AFTER INSERT ON auth.users` | [`supabase_schema.sql`](supabase_schema.sql) (Lines 43–71) | Guarantees atomic, event-driven profile generation during signup with zero client dependency. |
+| **Centralized State Management** | React Context API distributing authentication, profile, and session state | [`src/context/AuthContext.jsx`](src/context/AuthContext.jsx) | Eliminates prop drilling across the component hierarchy; keeps UI in sync with auth changes. |
+
+---
+
+### F. Real-World End-to-End Data Flow Tracing
+
+To understand how these concepts operate during an actual agricultural workflow, consider the following end-to-end data tracing of a farmer using the platform:
+
+```
+[Farmer in Browser]
+       │
+       ▼ (1) Enters Email & Password
+[src/components/AuthModal.jsx] ───> [src/lib/supabaseAuth.js]
+                                              │
+                                              ▼ (2) HTTPS POST to Supabase Auth
+                                     [Supabase GoTrue Engine]
+                                              │
+                                              ├─► Issues JWT (Contains auth.uid)
+                                              └─► Fires PL/pgSQL Trigger: on_auth_user_created
+                                                          │
+                                                          ▼
+                                                  [public.profiles] (Auto-creates farmer profile)
+       │
+       ▼ (3) Registers Farm: "Punjab Agro Farm" (5 Acres)
+[src/pages/FarmManagement.jsx] ───> [src/services/farmService.js]
+                                              │
+                                              ▼ (4) POST /farms/ (JSON Payload with user_id)
+                                     [backend/routes/farms.py]
+                                              │
+                                              ├─► Pydantic FarmCreate validates types
+                                              └─► Inserts row into public.farms
+       │
+       ▼ (5) Creates Field: "North Field" (2 Acres)
+[src/pages/FieldManagement.jsx] ───> [src/services/fieldService.js] ───> POST /fields/ ───> [public.fields]
+       │
+       ▼ (6) Records Crop: "Wheat" (Variety: Sharbati)
+[src/pages/CropManagement.jsx] ───> [src/services/cropService.js] ───> POST /crops/ ───> [public.crops]
+       │
+       ▼ (7) Submits Soil Test (pH: 6.8, N: 190, P: 18, K: 190)
+[src/pages/SoilHealth.jsx] ───> [src/services/soilService.js]
+                                              │
+                                              ▼ (8) POST /soil/analyze
+                                     [backend/routes/soil.py]
+                                              │
+                                              ├─► Validates via SoilAnalyzeRequest
+                                              ├─► Inserts record into public.soil_records
+                                              ├─► Executes calculate_soil_health() in services/soil_ai.py
+                                              │     (Evaluates 0-100 score + agronomic alerts)
+                                              └─► Returns JSON: { score: 76, recommendations: [...] }
+       │
+       ▼ (9) Renders Visual Feedback
+[React Frontend] (Chart.js radar/doughnut charts display health scores and fertilizer schedule to farmer)
+```
+
+1. **Step 1: Farmer Authentication & Token Issuance:**
+   The farmer enters credentials in [`src/components/AuthModal.jsx`](src/components/AuthModal.jsx). The client calls `signInWithEmail()` in [`src/lib/supabaseAuth.js`](src/lib/supabaseAuth.js), which initiates a secure TLS exchange with Supabase Auth. Upon validation, a signed JWT containing the farmer's unique identifier (`auth.uid()`) is returned and saved in browser storage. Concurrently, the database trigger `on_auth_user_created` ensures a corresponding record exists in `public.profiles`.
+2. **Step 2: Farm Registration & Authorization:**
+   The farmer navigates to [`src/pages/FarmManagement.jsx`](src/pages/FarmManagement.jsx) and creates "Punjab Agro Farm". The client service [`src/services/farmService.js`](src/services/farmService.js) issues an HTTP `POST` to `/farms/` on the FastAPI backend. FastAPI passes the body through `FarmCreate` validation in [`backend/routes/farms.py`](backend/routes/farms.py) and executes an insert into `public.farms`. The database's RLS policy enforces that `user_id = auth.uid()`.
+3. **Step 3: Field Partitioning & Crop Assignment:**
+   The farmer creates a sub-plot ("North Field", 2.0 Acres) in [`src/pages/FieldManagement.jsx`](src/pages/FieldManagement.jsx). The call routes through [`src/services/fieldService.js`](src/services/fieldService.js) to `POST /fields/`, creating a record in `public.fields` with `farm_id` as foreign key. The farmer then associates a crop ("Sharbati Wheat") via [`src/services/cropService.js`](src/services/cropService.js) targeting `POST /crops/`. Referential integrity ensures this crop row is directly linked to the valid field UUID.
+4. **Step 4: Soil Health Analysis & Advisory Execution:**
+   The farmer inputs soil nutrient values (pH: 6.8, Nitrogen: 190 kg/ha, Phosphorus: 18 kg/ha, Potassium: 190 kg/ha) in [`src/pages/SoilHealth.jsx`](src/pages/SoilHealth.jsx). The client invokes `createSoilRecord()` in [`src/services/soilService.js`](src/services/soilService.js), issuing an HTTP `POST` to `/soil/analyze`.
+5. **Step 5: Algorithmic Evaluation & Data Persistence:**
+   In [`backend/routes/soil.py`](backend/routes/soil.py), the `SoilAnalyzeRequest` Pydantic model parses and validates the numeric inputs. The route inserts the raw test record into `public.soil_records` for long-term historical trend tracking. Simultaneously, it calls `calculate_soil_health()` in [`backend/services/soil_ai.py`](backend/services/soil_ai.py), which evaluates non-linear agronomic scoring rules and returns an aggregate health score (e.g., 76/100) along with specific corrective recommendations.
+6. **Step 6: Visual Presentation & Decision Support:**
+   The backend returns the JSON response to the frontend. The React UI updates reactive state, rendering Chart.js visualizations that show the nutrient balance alongside specific fertilizer dosage recommendations (Urea, DAP, MOP) calculated by the backend service.
 
 ---
 

@@ -19,6 +19,7 @@ import ExpertConsultation from './pages/ExpertConsultation';
 import CommunityForum from './pages/CommunityForum';
 import AiAssistant from './pages/AiAssistant';
 import SettingsPage from './pages/Settings';
+import Notifications from './pages/Notifications';
 
 import { useAuth } from './context/AuthContext';
 
@@ -143,6 +144,9 @@ export default function App() {
 
       case 'ai':
         return <AiAssistant />;
+
+      case 'notifications':
+        return <Notifications setActiveTab={handleTabChange} />;
 
       case 'settings':
         return (

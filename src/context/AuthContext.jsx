@@ -269,13 +269,17 @@ export function AuthProvider({ children }) {
       return null;
     }
 
+    const resolvedName =
+      profile?.full_name ||
+      session.user.user_metadata?.full_name ||
+      session.user.user_metadata?.name ||
+      session.user.email?.split('@')[0] ||
+      'Farmer';
+
     return {
       id: session.user.id,
-      name:
-        profile?.full_name ||
-        session.user.user_metadata?.full_name ||
-        session.user.email?.split('@')[0] ||
-        'Farmer',
+      name: resolvedName,
+      full_name: resolvedName,
       email: session.user.email || profile?.email || '',
       phone: profile?.phone || session.user.user_metadata?.phone || '',
       role: profile?.role || 'farmer',
