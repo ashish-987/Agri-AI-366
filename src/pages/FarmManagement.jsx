@@ -195,23 +195,12 @@ export default function FarmManagement() {
   }, [selectedField?.id]);
 
   const fetchFarms = async () => {
+    if (!user?.id) return;
     try {
       setLoading(true);
       setError('');
 
-      const USER_ID = user?.id || "YOUR-AUTH-USER-UUID";
-
-      const response = await fetch(
-        `http://127.0.0.1:8000/farms/${USER_ID}`
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to fetch farms");
-      }
-
-      const farmList = data.farms || [];
+      const farmList = await getMyFarms(user.id);
       setFarms(farmList);
 
       if (farmList.length > 0) {
@@ -299,44 +288,17 @@ export default function FarmManagement() {
       setError('');
       setSuccess('');
 
-      const farmPayload = {
-        user_id: user.id,
-        farm_name: farmForm.farmName,
-        state: farmForm.state || null,
-        district: farmForm.district || null,
-        village: farmForm.village || null,
-        area_acres: farmForm.areaAcres ? parseFloat(farmForm.areaAcres) : null,
-        latitude: farmForm.latitude ? parseFloat(farmForm.latitude) : null,
-        longitude: farmForm.longitude ? parseFloat(farmForm.longitude) : null
-      };
-
-      // Create farm via FastAPI endpoint
-      const response = await fetch('http://127.0.0.1:8000/farms/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(farmPayload)
+      // Create farm via service (tries backend first, falls back to Supabase)
+      const createdFarmObj = await createFarm({
+        userId: user.id,
+        farmName: farmForm.farmName,
+        state: farmForm.state,
+        district: farmForm.district,
+        village: farmForm.village,
+        areaAcres: farmForm.areaAcres,
+        latitude: farmForm.latitude,
+        longitude: farmForm.longitude
       });
-
-      const resData = await response.json();
-
-      let createdFarmObj = null;
-      if (resData?.success && resData?.farm) {
-        createdFarmObj = Array.isArray(resData.farm) ? resData.farm[0] : resData.farm;
-      }
-
-      if (!createdFarmObj) {
-        // Fallback to Supabase farm service
-        createdFarmObj = await createFarm({
-          userId: user.id,
-          farmName: farmForm.farmName,
-          state: farmForm.state,
-          district: farmForm.district,
-          village: farmForm.village,
-          areaAcres: farmForm.areaAcres,
-          latitude: farmForm.latitude,
-          longitude: farmForm.longitude
-        });
-      }
 
       setFarms((previous) => [
         createdFarmObj,

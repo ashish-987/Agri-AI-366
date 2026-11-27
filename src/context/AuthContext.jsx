@@ -235,6 +235,21 @@ export function AuthProvider({ children }) {
   };
 
   // ===================================================
+  // 10B. RESET PASSWORD (FORGOT PASSWORD)
+  // ===================================================
+  const resetPassword = async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/`
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  };
+
+  // ===================================================
   // 11. UPDATE PROFILE
   // ===================================================
   const updateProfile = async (updates) => {
@@ -305,6 +320,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     loginWithGoogle,
+    resetPassword,
     logout,
 
     // Profile

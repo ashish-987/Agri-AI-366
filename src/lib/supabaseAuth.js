@@ -155,3 +155,19 @@ export async function updateUserProfile(userId, profileUpdates) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Send password reset email via Supabase Auth
+ */
+export async function resetPasswordForEmail(email) {
+  if (!isSupabaseConfigured) {
+    return { data: {}, error: null };
+  }
+
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/`,
+  });
+
+  if (error) throw error;
+  return data;
+}

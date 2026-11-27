@@ -1,16 +1,19 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-load_dotenv()
+env_path = Path(__file__).resolve().parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    load_dotenv(override=True)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL") or "https://hdclioixlwspatqhhfqs.supabase.co"
 SUPABASE_SECRET_KEY = (
     os.getenv("SUPABASE_SECRET_KEY")
+    or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     or os.getenv("SUPABASE_KEY")
-    or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
-    or os.getenv("VITE_SUPABASE_ANON_KEY")
-    or "sb_publishable_tck3zgCyJH2uqxITtIkDCg_DjURhh-Q"
 )
 
 supabase: Client | None = None
