@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import {
   Sprout,
@@ -19,22 +19,28 @@ import { useAuth } from '../context/AuthContext';
 
 export default function AuthModal({
   isOpen,
-  onClose
+  onClose,
+  initialMode = 'login',
+  onSuccess
 }) {
   const {
     login,
     signup,
     loginWithGoogle,
-    resetPassword
+    resetPassword,
+    updatePassword
   } = useAuth();
 
   const [authMode, setAuthMode] =
-    useState('login');
+    useState(initialMode);
 
   const [email, setEmail] =
     useState('');
 
   const [password, setPassword] =
+    useState('');
+
+  const [confirmPassword, setConfirmPassword] =
     useState('');
 
   const [name, setName] =
@@ -51,6 +57,13 @@ export default function AuthModal({
 
   const [success, setSuccess] =
     useState('');
+
+  useEffect(() => {
+    if (initialMode) {
+      setAuthMode(initialMode);
+      resetMessages();
+    }
+  }, [initialMode, isOpen]);
 
   if (!isOpen) {
     return null;
@@ -73,18 +86,38 @@ export default function AuthModal({
     setLoading(true);
 
     try {
-      if (!email.trim()) {
-        throw new Error(
-          'Please enter your email address.'
-        );
-      }
-
       if (authMode === 'forgot_password') {
+        if (!email.trim()) {
+          throw new Error('Please enter your email address.');
+        }
         await resetPassword(email.trim());
         setSuccess(
           'Password reset instructions have been sent to your email. Please check your inbox and spam folder.'
         );
         return;
+      }
+
+      if (authMode === 'update_password') {
+        if (password.length < 6) {
+          throw new Error('New password must contain at least 6 characters.');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match. Please verify.');
+        }
+        await updatePassword(password);
+        setSuccess('Password updated successfully! You can now sign in with your new password.');
+        setPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          switchMode('login');
+        }, 2000);
+        return;
+      }
+
+      if (!email.trim()) {
+        throw new Error(
+          'Please enter your email address.'
+        );
       }
 
       if (password.length < 6) {
@@ -180,7 +213,7 @@ export default function AuthModal({
         <div className="text-center space-y-2">
 
           <div className="w-12 h-12 rounded-2xl bg-[#006c49] text-white flex items-center justify-center mx-auto shadow-md">
-            {authMode === 'forgot_password' ? (
+            {authMode === 'forgot_password' || authMode === 'update_password' ? (
               <KeyRound className="w-7 h-7" />
             ) : (
               <Sprout className="w-7 h-7" />
@@ -192,6 +225,8 @@ export default function AuthModal({
               ? 'Welcome to AgriAI 366'
               : authMode === 'register'
               ? 'Create Farmer Account'
+              : authMode === 'update_password'
+              ? 'Set New Password'
               : 'Forgot Password?'}
           </h2>
 
@@ -200,26 +235,28 @@ export default function AuthModal({
               ? 'Sign in to access your AgriAI dashboard.'
               : authMode === 'register'
               ? 'Create your free AgriAI farmer account.'
+              : authMode === 'update_password'
+              ? 'Create a new secure password for your account.'
               : 'Enter your registered email and we will send you a reset link.'}
           </p>
 
         </div>
 
         {/* MODE TABS OR BACK TO LOGIN */}
-        {authMode === 'forgot_password' ? (
+        {authMode === 'forgot_password' || authMode === 'update_password' ? (
           <div className="flex items-center justify-between pb-1 border-b border-emerald-100">
             <button
               type="button"
               onClick={() => switchMode('login')}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#006c49] hover:underline hover:text-[#046a38] transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#006c49] hover:underline hover:text-[#046a38] transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Sign In</span>
             </button>
 
             <span className="text-[11px] font-semibold text-[#6c7a71]">
-              Recovery Mode
+              {authMode === 'update_password' ? 'Password Reset' : 'Recovery Mode'}
             </span>
           </div>
         ) : (
@@ -274,8 +311,8 @@ export default function AuthModal({
           </div>
         )}
 
-        {/* GOOGLE (Hidden in Forgot Password mode) */}
-        {authMode !== 'forgot_password' && (
+        {/* GOOGLE (Hidden in Forgot Password / Recovery mode) */}
+        {authMode !== 'forgot_password' && authMode !== 'update_password' && (
           <>
             <button
               type="button"
@@ -362,31 +399,33 @@ export default function AuthModal({
           )}
 
           {/* EMAIL */}
-          <div>
+          {authMode !== 'update_password' && (
+            <div>
 
-            <label className="font-extrabold text-[#00422b] block mb-1">
-              Email Address
-            </label>
+              <label className="font-extrabold text-[#00422b] block mb-1">
+                Email Address
+              </label>
 
-            <div className="relative">
+              <div className="relative">
 
-              <Mail className="w-4 h-4 text-[#6c7a71] absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-[#6c7a71] absolute left-3.5 top-3" />
 
-              <input
-                type="email"
-                placeholder="farmer@example.com"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                required
-                disabled={loading}
-                className="w-full pl-10 pr-3 py-2.5 rounded-2xl border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49] font-medium disabled:opacity-60"
-              />
+                <input
+                  type="email"
+                  placeholder="farmer@example.com"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  required
+                  disabled={loading}
+                  className="w-full pl-10 pr-3 py-2.5 rounded-2xl border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49] font-medium disabled:opacity-60"
+                />
+
+              </div>
 
             </div>
-
-          </div>
+          )}
 
           {/* PHONE */}
           {authMode === 'register' && (
@@ -422,7 +461,7 @@ export default function AuthModal({
 
               <div className="flex items-center justify-between mb-1">
                 <label className="font-extrabold text-[#00422b]">
-                  Password
+                  {authMode === 'update_password' ? 'New Password' : 'Password'}
                 </label>
 
                 {authMode === 'login' && (
@@ -430,7 +469,7 @@ export default function AuthModal({
                     type="button"
                     onClick={() => switchMode('forgot_password')}
                     disabled={loading}
-                    className="text-[11px] font-bold text-[#006c49] hover:underline hover:text-[#046a38] transition-colors"
+                    className="text-[11px] font-bold text-[#006c49] hover:underline hover:text-[#046a38] transition-colors cursor-pointer"
                   >
                     Forgot Password?
                   </button>
@@ -443,10 +482,40 @@ export default function AuthModal({
 
                 <input
                   type="password"
-                  placeholder="Minimum 6 characters"
+                  placeholder={authMode === 'update_password' ? 'Enter new password (min 6 chars)' : 'Minimum 6 characters'}
                   value={password}
                   onChange={(e) =>
                     setPassword(e.target.value)
+                  }
+                  required
+                  minLength={6}
+                  disabled={loading}
+                  className="w-full pl-10 pr-3 py-2.5 rounded-2xl border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#006c49] font-medium disabled:opacity-60"
+                />
+
+              </div>
+
+            </div>
+          )}
+
+          {/* CONFIRM PASSWORD (FOR UPDATE PASSWORD MODE) */}
+          {authMode === 'update_password' && (
+            <div>
+
+              <label className="font-extrabold text-[#00422b] block mb-1">
+                Confirm New Password
+              </label>
+
+              <div className="relative">
+
+                <Lock className="w-4 h-4 text-[#6c7a71] absolute left-3.5 top-3" />
+
+                <input
+                  type="password"
+                  placeholder="Re-enter your new password"
+                  value={confirmPassword}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
                   }
                   required
                   minLength={6}
@@ -481,6 +550,8 @@ export default function AuthModal({
                     ? 'Sign In'
                     : authMode === 'register'
                     ? 'Create Account'
+                    : authMode === 'update_password'
+                    ? 'Update Password'
                     : 'Send Reset Link'}
                 </span>
 
@@ -492,13 +563,13 @@ export default function AuthModal({
 
           {/* FOOTER SWITCHER */}
           <div className="pt-1 text-center text-[11px] text-[#6c7a71]">
-            {authMode === 'forgot_password' ? (
+            {authMode === 'forgot_password' || authMode === 'update_password' ? (
               <p>
                 Remember your password?{' '}
                 <button
                   type="button"
                   onClick={() => switchMode('login')}
-                  className="font-bold text-[#006c49] hover:underline"
+                  className="font-bold text-[#006c49] hover:underline cursor-pointer"
                 >
                   Sign In
                 </button>

@@ -171,3 +171,20 @@ export async function resetPasswordForEmail(email) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Update user password after recovery link
+ */
+export async function updateUserPassword(newPassword) {
+  if (!isSupabaseConfigured) {
+    return { data: {}, error: null };
+  }
+
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) throw error;
+  return data;
+}
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -28,7 +28,9 @@ export default function App() {
     user,
     isLoggedIn,
     loading,
-    logout
+    logout,
+    isPasswordRecovery,
+    setIsPasswordRecovery
   } = useAuth();
 
   const [activeTab, setActiveTab] =
@@ -37,8 +39,18 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] =
     useState(false);
 
+  const [authModalMode, setAuthModalMode] =
+    useState('login');
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] =
     useState(false);
+
+  useEffect(() => {
+    if (isPasswordRecovery) {
+      setAuthModalMode('update_password');
+      setIsAuthModalOpen(true);
+    }
+  }, [isPasswordRecovery]);
 
   /*
    * While Supabase checks the existing session.
@@ -233,9 +245,14 @@ export default function App() {
       {/* Auth */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() =>
-          setIsAuthModalOpen(false)
-        }
+        initialMode={authModalMode}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthModalMode('login');
+          if (setIsPasswordRecovery) {
+            setIsPasswordRecovery(false);
+          }
+        }}
       />
 
     </div>

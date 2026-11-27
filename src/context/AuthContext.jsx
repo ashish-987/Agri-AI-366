@@ -34,6 +34,11 @@ export function AuthProvider({ children }) {
   // ---------------------------------------------------
   const [loading, setLoading] = useState(true);
 
+  // ---------------------------------------------------
+  // PASSWORD RECOVERY STATE
+  // ---------------------------------------------------
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+
   // ===================================================
   // 3. LOAD PROFILE FROM DATABASE
   // ===================================================
@@ -139,6 +144,10 @@ export function AuthProvider({ children }) {
       if (!mounted) return;
 
       console.log('Supabase Auth Event:', event);
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
 
       // Update session
       setSession(currentSession);
@@ -250,6 +259,21 @@ export function AuthProvider({ children }) {
   };
 
   // ===================================================
+  // 10C. UPDATE PASSWORD (AFTER RESET / RECOVERY)
+  // ===================================================
+  const updatePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  };
+
+  // ===================================================
   // 11. UPDATE PROFILE
   // ===================================================
   const updateProfile = async (updates) => {
@@ -321,7 +345,10 @@ export function AuthProvider({ children }) {
     signup,
     loginWithGoogle,
     resetPassword,
+    updatePassword,
     logout,
+    isPasswordRecovery,
+    setIsPasswordRecovery,
 
     // Profile
     updateProfile,
